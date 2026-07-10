@@ -1,4 +1,4 @@
-module go_learning
+module gacha-admin
 
 go 1.26.2
 
