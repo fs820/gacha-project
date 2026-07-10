@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>管理画面</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>管理画面</h1>
+    
+    <div class="tabs">
+        <button onclick="showPage('pickup')">ピックアップ変更</button>
+        <button onclick="showPage('character')">キャラクター追加</button>
+        <button onclick="showPage('stone')">石の付与</button>
+        <button onclick="showPage('history')">ガチャ履歴削除</button>
+    </div>
+
+    <div id="pickup" class="page">
+        <h3>ピックアップ変更</h3>
+        <div id="checkboxContainer_star5"></div>
+        <div id="checkboxContainer_star4"></div>
+        <button id="submitButton">決定</button>
+    </div>
+
+    <div id="character" class="page" style="display:none;">
+        <h3>キャラクター追加</h3>
+        <input type="text" id="charName" placeholder="キャラクター名">
+        <select id="charRarity">
+            <option value="星4">星4</option>
+            <option value="星5">星5</option>
+        </select>
+        <br><br>
+        <button onclick="insertCharacter()">追加</button>
+    </div>
+
+    <div id="stone" class="page" style="display:none;">
+        <h3>石の付与</h3>
+        <input type="text" id="uid" placeholder="ユーザーID">
+        <input type="number" id="amount" placeholder="付与する石の数">
+        <br><br>
+        <button onclick="addStone()">付与</button>
+    </div>
+
+    <div id="history" class="page" style="display:none;">
+        <h3>ガチャ履歴の削除</h3>
+        <button onclick="deleteHistory()">削除</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

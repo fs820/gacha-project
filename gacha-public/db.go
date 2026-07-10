@@ -1,0 +1,261 @@
+package main // エントリーポイント
+
+// ライブラリのインポート
+import (
+	"database/sql" // データベース操作に使用
+	"fmt"
+	"log" // ロギングに使用
+	"os"
+
+	_ "github.com/lib/pq" // PostgreSQLドライバ (データベース接続)
+)
+
+var userDB *sql.DB
+
+// データベースの初期化関数
+func initDB() {
+	var err error
+	// .env や Render の環境変数からURLを取得
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URLが設定されていません")
+	}
+
+	// PostgreSQLに接続
+	userDB, err = sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ユーザーのカウンター状態を保存するテーブルを作成
+	usersTable := `
+	CREATE TABLE IF NOT EXISTS users (
+		uid TEXT PRIMARY KEY,
+		username TEXT UNIQUE,
+		password_hash TEXT,
+		stones INTEGER DEFAULT 30000,
+		star4_limit_counter INTEGER DEFAULT 0,
+		star5_limit_counter INTEGER DEFAULT 0,
+		is_next_pickup_guaranteed BOOLEAN DEFAULT false
+	);`
+	_, err = userDB.Exec(usersTable)
+	if err != nil {
+		log.Fatal("usersテーブル作成エラー:", err)
+	}
+
+	// ガチャの履歴を保存するテーブルを作成
+	historyTable := `
+	CREATE TABLE IF NOT EXISTS history (
+		id SERIAL PRIMARY KEY,
+		uid TEXT,
+		rarity TEXT,
+		character TEXT
+	);`
+	_, err = userDB.Exec(historyTable)
+	if err != nil {
+		log.Fatal("historyテーブル作成エラー:", err)
+	}
+
+	// キャラクターデータを保存するテーブルを作成
+	charactersTable := `
+	CREATE TABLE IF NOT EXISTS characters (
+		id SERIAL PRIMARY KEY,
+		name TEXT,
+		rarity TEXT,
+		is_pickup BOOLEAN DEFAULT false
+	);`
+	_, err = userDB.Exec(charactersTable)
+	if err != nil {
+		log.Fatal("charactersテーブル作成エラー:", err)
+	}
+
+	// もしキャラクターテーブルが空の場合初期化
+	var count int
+	userDB.QueryRow("SELECT COUNT(*) FROM characters").Scan(&count)
+	if count == 0 {
+		log.Println("キャラクターの初期データを挿入します...")
+		initialData := []struct {
+			name     string
+			rarity   string
+			isPickup bool
+		}{
+			{"ゼウス", "星5", true},
+			{"ウラノス", "星5", false},
+			{"クロノス", "星5", false},
+			{"釈迦", "星5", false},
+			{"シヴァ", "星5", false},
+			{"ポセイドン", "星5", false},
+			{"ヘラクレス", "星5", false},
+			{"キリスト", "星5", false},
+			{"ヨハネ", "星4", true},
+			{"千手観音", "星4", true},
+			{"アキレス", "星4", true},
+			{"武器", "星3", false},
+		}
+
+		for _, c := range initialData {
+			userDB.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
+				c.name, c.rarity, c.isPickup)
+		}
+	}
+
+	// 決済の注文状態を管理するテーブルを作成
+	ordersTable := `
+	CREATE TABLE IF NOT EXISTS orders (
+		order_id TEXT PRIMARY KEY,
+		uid TEXT,
+		amount INTEGER,
+		status TEXT   /* 'pending'(未払い) または 'paid'(支払い済み) */
+	);`
+	_, err = userDB.Exec(ordersTable)
+	if err != nil {
+		log.Fatal("ordersテーブル作成エラー:", err)
+	}
+}
+
+// ユーザーIDからデータを取得する関数
+func getUserData(uid string) *UserData {
+	user := &UserData{}
+	var isGuaranteed bool // PostgreSQLのBOOLEANを安全に受け取るための一時変数
+
+	// カウンター情報の取得
+	row := userDB.QueryRow("SELECT stones, star4_limit_counter, star5_limit_counter, is_next_pickup_guaranteed FROM users WHERE uid = $1", uid)
+	err := row.Scan(&user.Stones, &user.Star4LimitCounter, &user.Star5LimitCounter, &isGuaranteed)
+	if err == sql.ErrNoRows {
+		// データが無い（新規ユーザー）の場合は、初期値をDBに登録
+		userDB.Exec("INSERT INTO users (uid) VALUES ($1)", uid)
+	}
+
+	// ピックアップ保証の状態をUserDataに反映
+	user.IsNextPickupGuaranteed = isGuaranteed
+
+	// 履歴の取得新しいものを50件取得して、古い順に並び替えるs
+	rows, err := userDB.Query("SELECT rarity, character FROM (SELECT id, rarity, character FROM history WHERE uid = $1 ORDER BY id DESC LIMIT 50) AS sub ORDER BY id ASC", uid)
+	if err != nil {
+		log.Println("履歴取得エラー:", err)
+		return user // エラーが起きたらここで中断
+	}
+	defer rows.Close() // 使い終わったら必ず閉じる
+
+	// 取得した履歴をUserDataのGachaHistoryに追加
+	for rows.Next() {
+		var res GachaResult
+		rows.Scan(&res.Rarity, &res.Character)
+		user.GachaHistory = append(user.GachaHistory, res)
+	}
+
+	return user
+}
+
+// DBに新規ユーザーを登録する関数 ※パスワードはhash済文字列
+func insertUser(uid string, username string, hashedPassword string) error {
+	// データベースに新しいユーザーを保存
+	_, err := userDB.Exec("INSERT INTO users (uid, username, password_hash) VALUES ($1, $2, $3)",
+		uid, username, hashedPassword)
+	return err
+}
+
+// ユーザー名からDBを検索して uidとhash済パスワードを返す関数
+func findUser(username string) (string, string, error) {
+	var uid, hash string
+	err := userDB.QueryRow("SELECT uid, password_hash FROM users WHERE username = $1", username).Scan(&uid, &hash)
+	return uid, hash, err
+}
+
+// ガチャの結果を保存する関数 （トランザクション）
+func saveGachaResultTx(uid string, user *UserData, results []GachaResult, cost int) error {
+	// トランザクションの開始
+	tx, err := userDB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// 石を消費してカウンターを進める
+	_, err = tx.Exec("UPDATE users SET stones = stones - $1, star4_limit_counter = $2, star5_limit_counter = $3, is_next_pickup_guaranteed = $4 WHERE uid = $5",
+		cost, user.Star4LimitCounter, user.Star5LimitCounter, user.IsNextPickupGuaranteed, uid)
+	if err != nil {
+		tx.Rollback() // エラーが起きたらロールバック
+		return err
+	}
+
+	// ガチャの結果を履歴テーブルに保存
+	for _, res := range results {
+		_, err = tx.Exec("INSERT INTO history (uid, rarity, character) VALUES ($1, $2, $3)", uid, res.Rarity, res.Character)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// コミットして確定
+	return tx.Commit()
+}
+
+// DBから指定したレアリティとピックアップ条件に合うキャラクターの配列を取得する関数
+func getCharactersFromDB(rarity string, isPickup bool) []string {
+	var chars []string
+
+	// DBから検索
+	rows, err := userDB.Query("SELECT name FROM characters WHERE rarity = $1 AND is_pickup = $2", rarity, isPickup)
+	if err != nil {
+		log.Println("キャラクター取得エラー:", err)
+		return chars
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		rows.Scan(&name)
+		chars = append(chars, name)
+	}
+
+	return chars
+}
+
+// ユーザーの石を購入するリクエストをDBに登録する関数
+func registerOrder(orderID string, uid string, amount int) error {
+	_, err := userDB.Exec("INSERT INTO orders (order_id, uid, amount, status) VALUES ($1, $2, $3, 'pending')", orderID, uid, amount)
+	return err
+}
+
+// 決済会社が決済出来た時に呼ばれる、石を増やしえ決済を完了する関数 (トランザクション)
+func completeOrderTx(orderID string) error {
+	// トランザクション開始 (注文の完了、石の付与)
+	tx, err := userDB.Begin()
+	if err != nil {
+		return err
+	}
+
+	// 注文を完了状態にに更新する (すでに 完了している('paid')の場合は何もしない(二重決済禁止))
+	res, err := tx.Exec("UPDATE orders SET status = 'paid' WHERE order_id = $1 AND status = 'pending'", orderID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 実際に更新された行数をチェック
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		tx.Rollback()
+		return fmt.Errorf("無効な注文番号、または既に支払い済みの注文です")
+	}
+
+	// 購入したユーザーのIDと、付与する石の量を取得
+	var uid string
+	var amount int
+	err = tx.QueryRow("SELECT uid, amount FROM orders WHERE order_id = $1", orderID).Scan(&uid, &amount)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 石を付与
+	_, err = tx.Exec("UPDATE users SET stones = stones + $1 WHERE uid = $2", amount, uid)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// トランザクション終了
+	return tx.Commit()
+}
