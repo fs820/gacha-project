@@ -4,17 +4,11 @@ package main // エントリーポイント
 import (
 	"encoding/json"
 	"fmt"
+	core "gacha-core"
 	"net/http" // HTTPサーバーの構築に使用
 	"strconv"
 	"strings"
 )
-
-// キャラクター情報を表す構造体
-type Character struct {
-	Name     string `json:"name"`
-	Rarity   string `json:"rarity"`
-	IsPickup bool   `json:"isPickup"`
-}
 
 // 管理者専用：すべての履歴を削除するエンドポイント
 func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +88,7 @@ func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 新しいキャラクター情報を作成
-	newCharacter := Character{
+	newCharacter := core.Character{
 		Name:   targetNamesStr,
 		Rarity: rarity,
 	}

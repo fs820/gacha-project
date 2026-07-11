@@ -3,7 +3,8 @@ package main // エントリーポイント
 // ライブラリのインポート
 import (
 	"encoding/json" // JSONのエンコード/デコードに使用
-	"math/rand/v2"  // 乱数 ガチャ用 (高速)
+	core "gacha-core"
+	"math/rand/v2" // 乱数 ガチャ用 (高速)
 	"net/http"
 )
 
@@ -29,29 +30,6 @@ const (
 	softPityIncrement = 6  // 確率が上がる割合 (6%ずつ増加)
 )
 
-// ユーザデータ
-type UserData struct {
-	Stones                 int
-	Star4LimitCounter      int
-	Star5LimitCounter      int
-	IsNextPickupGuaranteed bool
-	GachaHistory           []GachaResult
-}
-
-// ガチャの結果を入れる構造体 変数名の先頭が大文字にすると外部からアクセスできる（JSONに変換するために必要）
-type GachaResult struct {
-	Rarity    string `json:"rarity"`    // レアリティ (`json:"rarity"`は、JSONに変換するときのキー名)
-	Character string `json:"character"` // キャラクター名 (`json:"character"`は、JSONに変換するときのキー名)
-}
-
-// ブラウザへ返すレスポンス
-type GachaResponse struct {
-	Results   []GachaResult `json:"results"`   // 今回の結果リスト
-	Pity5Star int           `json:"pity5Star"` // 星5天井まであと何回か
-	Pity4Star int           `json:"pity4Star"` // 星4天井まであと何回か
-	Stones    int           `json:"stones"`    // 所持石数
-}
-
 // ガチャの処理を行う関数
 func gachaHandler(w http.ResponseWriter, r *http.Request) {
 	// CookieからユーザーIDを取得
@@ -74,7 +52,7 @@ func gachaHandler(w http.ResponseWriter, r *http.Request) {
 	result := gachaJudgment(user)
 
 	// DB保存
-	err = saveGachaResultTx(uid, user, []GachaResult{result}, gachaCost)
+	err = saveGachaResultTx(uid, user, []core.GachaResult{result}, gachaCost)
 	if err != nil {
 		http.Error(w, "サーバーエラーが発生しました", http.StatusInternalServerError)
 		return
@@ -91,7 +69,7 @@ func gachaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// レスポンス作成
-	sendGachaResponse(w, []GachaResult{result}, user)
+	sendGachaResponse(w, []core.GachaResult{result}, user)
 }
 
 // 10連ガチャの処理を行う関数
@@ -112,7 +90,7 @@ func gacha10Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []GachaResult
+	var results []core.GachaResult
 	for i := 0; i < 10; i++ {
 		// ガチャの結果を判定する関数を呼び出して、結果を取得して、resultsの配列に追加
 		result := gachaJudgment(user)
@@ -175,7 +153,7 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 	// 履歴が空の場合は、空の配列を返す
 	if len(user.GachaHistory) == 0 {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		json.NewEncoder(w).Encode([]GachaResult{})
+		json.NewEncoder(w).Encode([]core.GachaResult{})
 		return
 	}
 
@@ -184,8 +162,8 @@ func historyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 共通のレスポンス送信処理
-func sendGachaResponse(w http.ResponseWriter, results []GachaResult, user *UserData) {
-	response := GachaResponse{
+func sendGachaResponse(w http.ResponseWriter, results []core.GachaResult, user *core.UserData) {
+	response := core.GachaResponse{
 		Results:   results,
 		Pity5Star: star5Limit - user.Star5LimitCounter, // あと何回か
 		Pity4Star: star4Limit - user.Star4LimitCounter,
@@ -196,7 +174,7 @@ func sendGachaResponse(w http.ResponseWriter, results []GachaResult, user *UserD
 }
 
 // ガチャの結果を判定する関数
-func gachaJudgment(user *UserData) GachaResult {
+func gachaJudgment(user *core.UserData) core.GachaResult {
 	// カウンターをインクリメント
 	user.Star4LimitCounter++ // 星4以上が出るまでのカウンター
 	user.Star5LimitCounter++ // 星5が出るまでのカウンター
@@ -227,36 +205,36 @@ func gachaJudgment(user *UserData) GachaResult {
 
 		pickupStar4 := getCharactersFromDB("星4", true) // ピックアップ星4キャラクターのリストをDBから取得
 		randomIndex := rand.IntN(len(pickupStar4))     // ピックアップ星4キャラクターの中からランダムに選ぶ
-		return GachaResult{Rarity: "星4", Character: pickupStar4[randomIndex]}
+		return core.GachaResult{Rarity: "星4", Character: pickupStar4[randomIndex]}
 	} else {
 		// 94.3%の確率で星3
 		star3 := getCharactersFromDB("星3", false) // 星3キャラクターのリストをDBから取得
 		randomIndex := rand.IntN(len(star3))      // 星3キャラクターの中からランダムに選ぶ
-		return GachaResult{Rarity: "星3", Character: star3[randomIndex]}
+		return core.GachaResult{Rarity: "星3", Character: star3[randomIndex]}
 	}
 }
 
 // ピックアップキャラクターの当選判定を行う関数
-func pickupJudgment(user *UserData) GachaResult {
+func pickupJudgment(user *core.UserData) core.GachaResult {
 	// ピックアップキャラクターが確定している場合は、ピックアップキャラクターを返す
 	if user.IsNextPickupGuaranteed {
 		user.IsNextPickupGuaranteed = false // フラグをリセット
 
-		pickupStar5 := getCharactersFromDB("星5", true)                        // ピックアップ星5キャラクターのリストをDBから取得
-		randomIndex := rand.IntN(len(pickupStar5))                            // ピックアップ星5キャラクターの中からランダムに選ぶ
-		return GachaResult{Rarity: "星5", Character: pickupStar5[randomIndex]} // ピックアップキャラクターの中から1体を返す（今回は1体しかいない想定）
+		pickupStar5 := getCharactersFromDB("星5", true)                             // ピックアップ星5キャラクターのリストをDBから取得
+		randomIndex := rand.IntN(len(pickupStar5))                                 // ピックアップ星5キャラクターの中からランダムに選ぶ
+		return core.GachaResult{Rarity: "星5", Character: pickupStar5[randomIndex]} // ピックアップキャラクターの中から1体を返す（今回は1体しかいない想定）
 	} else {
 		// ピックアップキャラクターが確定していない場合は、50%の確率でピックアップキャラクター、50%の確率ですり抜けキャラクターを返す
 		if rand.IntN(2) == 0 {
 			pickupStar5 := getCharactersFromDB("星5", true) // ピックアップ星5キャラクターのリストをDBから取得
 			randomIndex := rand.IntN(len(pickupStar5))     // ピックアップ星5キャラクターの中からランダムに選ぶ
-			return GachaResult{Rarity: "星5", Character: pickupStar5[randomIndex]}
+			return core.GachaResult{Rarity: "星5", Character: pickupStar5[randomIndex]}
 		} else {
 			user.IsNextPickupGuaranteed = true // 次のガチャでピックアップキャラクターが確定するようにフラグをセット
 
 			standardStar5 := getCharactersFromDB("星5", false) // すり抜け星5キャラクターのリストをDBから取得
 			randomIndex := rand.IntN(len(standardStar5))      // すり抜けキャラクターの中からランダムに選ぶ
-			return GachaResult{Rarity: "星5", Character: standardStar5[randomIndex]}
+			return core.GachaResult{Rarity: "星5", Character: standardStar5[randomIndex]}
 		}
 	}
 }

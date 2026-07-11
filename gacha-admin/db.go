@@ -20,8 +20,8 @@ func cleanupHistory() error {
 }
 
 // DBから現在のキャラクターの配列を取得する関数
-func getCharacters() []Character {
-	var chars []Character
+func getCharacters() []core.Character {
+	var chars []core.Character
 
 	// DBから検索
 	rows, err := core.UserDB.Query("SELECT name, rarity, is_pickup FROM characters")
@@ -33,7 +33,7 @@ func getCharacters() []Character {
 
 	// 取得したデータを構造体に格納
 	for rows.Next() {
-		var char Character
+		var char core.Character
 		rows.Scan(&char.Name, &char.Rarity, &char.IsPickup)
 		chars = append(chars, char)
 	}
@@ -42,7 +42,7 @@ func getCharacters() []Character {
 }
 
 // 新しいキャラクターをDBに挿入する関数
-func insertCharacter(Character Character) error {
+func insertCharacter(Character core.Character) error {
 	_, err := core.UserDB.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
 		Character.Name, Character.Rarity, Character.IsPickup)
 	return err

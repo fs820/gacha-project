@@ -9,8 +9,8 @@ import (
 )
 
 // ユーザーIDからデータを取得する関数
-func getUserData(uid string) *UserData {
-	user := &UserData{}
+func getUserData(uid string) *core.UserData {
+	user := &core.UserData{}
 	var isGuaranteed bool // PostgreSQLのBOOLEANを安全に受け取るための一時変数
 
 	// カウンター情報の取得
@@ -34,7 +34,7 @@ func getUserData(uid string) *UserData {
 
 	// 取得した履歴をUserDataのGachaHistoryに追加
 	for rows.Next() {
-		var res GachaResult
+		var res core.GachaResult
 		rows.Scan(&res.Rarity, &res.Character)
 		user.GachaHistory = append(user.GachaHistory, res)
 	}
@@ -58,7 +58,7 @@ func findUser(username string) (string, string, error) {
 }
 
 // ガチャの結果を保存する関数 （トランザクション）
-func saveGachaResultTx(uid string, user *UserData, results []GachaResult, cost int) error {
+func saveGachaResultTx(uid string, user *core.UserData, results []core.GachaResult, cost int) error {
 	// トランザクションの開始
 	tx, err := core.UserDB.Begin()
 	if err != nil {
