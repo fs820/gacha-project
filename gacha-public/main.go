@@ -2,9 +2,10 @@ package main // エントリーポイント
 
 // ライブラリのインポート
 import (
-	"fmt" // フォーマット用 (文字列の整形など)
-	"log"
-	"net/http" // HTTPサーバーの構築に使用
+	"fmt"             // フォーマット用 (文字列の整形など)
+	core "gacha-core" // DBコア
+	"log"             // ロギング
+	"net/http"        // HTTPサーバーの構築
 
 	"github.com/joho/godotenv" // .env ファイルを読み込むためのライブラリ
 )
@@ -18,7 +19,7 @@ func main() {
 	}
 
 	// データベースの初期化
-	initDB()
+	core.InitDB()
 
 	// "static"フォルダの中身（HTML, CSS, JS）を、そのままブラウザに公開する設定
 	fs := http.FileServer(http.Dir("static"))

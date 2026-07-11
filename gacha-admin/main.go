@@ -3,6 +3,7 @@ package main // エントリーポイント
 // ライブラリのインポート
 import (
 	"fmt" // フォーマット用 (文字列の整形など)
+	core "gacha-core"
 	"log"
 	"net/http" // HTTPサーバーの構築に使用
 	"os"
@@ -34,7 +35,7 @@ func main() {
 	}
 
 	// データベースの初期化
-	initDB()
+	core.InitDB()
 
 	// "static"フォルダの中身（HTML, CSS, JS）を、そのままブラウザに公開する設定
 	fs := http.FileServer(http.Dir("static"))
@@ -42,11 +43,11 @@ func main() {
 	http.Handle("/", basicAuth(fs))
 
 	// 管理者用エンドポイント
-	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(adminDeleteHistoryHandler)))
-	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(adminAddStonesHandler)))
-	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(adminInsertCharacterHandler)))
-	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(adminUpdatePickupHandler)))
-	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(adminGetCharacterHandler)))
+	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(adminDeleteHistoryHandler)))     // 履歴の削除
+	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(adminAddStonesHandler)))             // 石の付与
+	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(adminInsertCharacterHandler))) // キャラクター追加
+	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(adminUpdatePickupHandler)))       // ピックアップ変更
+	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(adminGetCharacterHandler)))       // キャラクター取得
 
 	// サーバー起動のメッセージを表示
 	fmt.Println("サーバーを起動しました！ ブラウザで http://localhost:8081 にアクセスしてください。")
