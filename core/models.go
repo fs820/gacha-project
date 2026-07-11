@@ -2,11 +2,12 @@ package core
 
 // ユーザデータ
 type UserData struct {
-	Stones                 int
-	Star4LimitCounter      int
-	Star5LimitCounter      int
-	IsNextPickupGuaranteed bool
-	GachaHistory           []GachaResult
+	UID                    string        `json:"uid"`
+	Stones                 int           `json:"stones"`
+	Star4LimitCounter      int           `json:"star4LimitCounter"`
+	Star5LimitCounter      int           `json:"star5LimitCounter"`
+	IsNextPickupGuaranteed bool          `json:"isNextPickupGuaranteed"`
+	GachaHistory           []GachaResult `json:"gachaHistory"`
 }
 
 // キャラクター情報を表す構造体

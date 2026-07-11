@@ -146,7 +146,7 @@ async function drawGacha10() {
         // 10個の結果をループ
         data.results.forEach(res => {
             // レアリティに応じて色を変える
-            let colorClass = res.character.rarity === "星5" ? "star5" : (res.rarity === "星4" ? "star4" : "star3");
+            let colorClass = res.character.rarity === "星5" ? "star5" : (res.character.rarity === "星4" ? "star4" : "star3");
             resultArea.innerHTML += `<div class="${colorClass}">【${res.character.rarity}】 ${res.character.name}</div>`;
 
             // 履歴UIも更新
@@ -219,8 +219,8 @@ async function loadHistoryFromServer() {
         const historyArea = document.getElementById("history-area");
         historyArea.innerHTML = "";
         data.reverse().forEach(item => {
-            let colorClass = item.rarity === "星5" ? "star5" : (item.rarity === "星4" ? "star4" : "star3");
-            historyArea.innerHTML += `<div class="history-item ${colorClass}">【${item.rarity}】 ${item.character}</div>`;
+            let colorClass = item.character.rarity === "星5" ? "star5" : (item.character.rarity === "星4" ? "star4" : "star3");
+            historyArea.innerHTML += `<div class="history-item ${colorClass}">【${item.character.rarity}】 ${item.character.name}</div>`;
         });
     } catch (error) {
         console.error("履歴の取得に失敗:", error);
