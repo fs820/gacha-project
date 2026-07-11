@@ -8,12 +8,8 @@ import (
 	_ "github.com/lib/pq" // PostgreSQLドライバ (データベース接続)
 )
 
-// DB
-var UserDB *sql.DB
-
-// データベースの初期化関数
-func InitDB() {
-	var err error
+// 環境変数からDB接続を生成する関数
+func NewDBConnection() (*sql.DB, error) {
 	// .env や Render の環境変数からURLを取得
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
@@ -21,10 +17,12 @@ func InitDB() {
 	}
 
 	// PostgreSQLに接続
-	UserDB, err = sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal(err)
-	}
+	return sql.Open("postgres", dbURL)
+}
+
+// データベース初期化関数
+func InitSchema(db *sql.DB) error {
+	var err error
 
 	// ユーザーのカウンター状態を保存するテーブルを作成
 	usersTable := `
@@ -37,9 +35,9 @@ func InitDB() {
 		star5_limit_counter INTEGER DEFAULT 0,
 		is_next_pickup_guaranteed BOOLEAN DEFAULT false
 	);`
-	_, err = UserDB.Exec(usersTable)
+	_, err = db.Exec(usersTable)
 	if err != nil {
-		log.Fatal("usersテーブル作成エラー:", err)
+		return err
 	}
 
 	// ガチャの履歴を保存するテーブルを作成
@@ -50,9 +48,9 @@ func InitDB() {
 		rarity TEXT,
 		character TEXT
 	);`
-	_, err = UserDB.Exec(historyTable)
+	_, err = db.Exec(historyTable)
 	if err != nil {
-		log.Fatal("historyテーブル作成エラー:", err)
+		return err
 	}
 
 	// キャラクターデータを保存するテーブルを作成
@@ -63,14 +61,14 @@ func InitDB() {
 		rarity TEXT,
 		is_pickup BOOLEAN DEFAULT false
 	);`
-	_, err = UserDB.Exec(charactersTable)
+	_, err = db.Exec(charactersTable)
 	if err != nil {
-		log.Fatal("charactersテーブル作成エラー:", err)
+		return err
 	}
 
 	// もしキャラクターテーブルが空の場合初期化
 	var count int
-	UserDB.QueryRow("SELECT COUNT(*) FROM characters").Scan(&count)
+	db.QueryRow("SELECT COUNT(*) FROM characters").Scan(&count)
 	if count == 0 {
 		log.Println("キャラクターの初期データを挿入します...")
 		initialData := []struct {
@@ -93,7 +91,7 @@ func InitDB() {
 		}
 
 		for _, c := range initialData {
-			UserDB.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
+			db.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
 				c.name, c.rarity, c.isPickup)
 		}
 	}
@@ -106,8 +104,7 @@ func InitDB() {
 		amount INTEGER,
 		status TEXT   /* 'pending'(未払い) または 'paid'(支払い済み) */
 	);`
-	_, err = UserDB.Exec(ordersTable)
-	if err != nil {
-		log.Fatal("ordersテーブル作成エラー:", err)
-	}
+	_, err = db.Exec(ordersTable)
+
+	return err
 }

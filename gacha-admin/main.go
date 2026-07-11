@@ -2,6 +2,7 @@ package main // エントリーポイント
 
 // ライブラリのインポート
 import (
+	"database/sql"
 	"fmt" // フォーマット用 (文字列の整形など)
 	core "gacha-core"
 	"log"
@@ -10,6 +11,11 @@ import (
 
 	"github.com/joho/godotenv" // .env ファイルを読み込むためのライブラリ
 )
+
+// 管理者用アプリケーション構造体
+type AdminApp struct {
+	db *sql.DB
+}
 
 // Basic認証用のミドルウェア関数を作る
 func basicAuth(next http.Handler) http.Handler {
@@ -34,20 +40,31 @@ func main() {
 		log.Println("警告: .env ファイルが見つかりません。環境変数が直接設定されているか確認してください。")
 	}
 
+	// DBに接続する
+	database, err := core.NewDBConnection()
+	if err != nil {
+		log.Fatal("DB接続エラー:", err)
+	}
+	defer database.Close()
+
 	// データベースの初期化
-	core.InitDB()
+	core.InitSchema(database)
+
+	// アプリケーションの構築
+	app := &AdminApp{db: database}
 
 	// "static"フォルダの中身（HTML, CSS, JS）を、そのままブラウザに公開する設定
 	fs := http.FileServer(http.Dir("static"))
-	// Basic認証をかけて、静的ファイルを提供する
+
+	// 静的ファイルを提供する (Basic認証)
 	http.Handle("/", basicAuth(fs))
 
-	// 管理者用エンドポイント
-	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(adminDeleteHistoryHandler)))     // 履歴の削除
-	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(adminAddStonesHandler)))             // 石の付与
-	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(adminInsertCharacterHandler))) // キャラクター追加
-	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(adminUpdatePickupHandler)))       // ピックアップ変更
-	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(adminGetCharacterHandler)))       // キャラクター取得
+	// 管理者用エンドポイント (Basic認証)
+	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(app.adminDeleteHistoryHandler)))     // 履歴の削除
+	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(app.adminAddStonesHandler)))             // 石の付与
+	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(app.adminInsertCharacterHandler))) // キャラクター追加
+	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(app.adminUpdatePickupHandler)))       // ピックアップ変更
+	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(app.adminGetCharacterHandler)))       // キャラクター取得
 
 	// サーバー起動のメッセージを表示
 	fmt.Println("サーバーを起動しました！ ブラウザで http://localhost:8081 にアクセスしてください。")

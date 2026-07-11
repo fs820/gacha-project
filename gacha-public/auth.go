@@ -82,7 +82,7 @@ func verifyRecaptcha(token string) bool {
 }
 
 // ログイン状態を確認するハンドラー
-func checkAuthHandler(w http.ResponseWriter, r *http.Request) {
+func (app *PublicApp) checkAuthHandler(w http.ResponseWriter, r *http.Request) {
 	// CookieからユーザーIDを取得
 	_, err := getSession(r)
 	if err != nil {
@@ -97,7 +97,7 @@ func checkAuthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 新規登録ハンドラー
-func registerHandler(w http.ResponseWriter, r *http.Request) {
+func (app *PublicApp) registerHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "POSTリクエストのみ許可されています", http.StatusMethodNotAllowed)
@@ -131,7 +131,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	uid := generateSessionID()
 
 	// DB登録
-	err = insertUser(uid, req.Username, string(hashedPassword))
+	err = insertUser(app.db, uid, req.Username, string(hashedPassword))
 	if err != nil {
 		http.Error(w, "そのユーザー名は既に使われています", http.StatusConflict)
 		return
@@ -143,7 +143,7 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // ログインハンドラー
-func loginHandler(w http.ResponseWriter, r *http.Request) {
+func (app *PublicApp) loginHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "POSTリクエストのみ許可されています", http.StatusMethodNotAllowed)
@@ -160,7 +160,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, hashedPassword, err := findUser(req.Username)
+	uid, hashedPassword, err := findUser(app.db, req.Username)
 	if err != nil {
 		http.Error(w, "ユーザー名またはパスワードが間違っています", http.StatusUnauthorized)
 		return

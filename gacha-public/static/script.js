@@ -110,12 +110,13 @@ async function drawGacha() {
 
         // 結果を表示する
         const res = data.results[0];
-        let colorClass = res.rarity === "星5" ? "star5" : (res.rarity === "星4" ? "star4" : "star3");
-        resultArea.innerHTML = `<span class="${colorClass}">【${res.rarity}】 ${res.character}</span>`;
+        
+        let colorClass = res.character.rarity === "星5" ? "star5" : (res.character.rarity === "星4" ? "star4" : "star3");
+        resultArea.innerHTML = `<span class="${colorClass}">【${res.rarity}】 ${res.character.name}</span>`;
         
         // UI更新
         updatePityUI(data.pity5Star, data.pity4Star, data.stones);
-        updateHistoryUI(res.character, res.rarity);
+        updateHistoryUI(res.character);
     } catch (error) {
         // エラーの具体的な中身（error.message）を画面に出す！
         resultArea.innerHTML = "エラー詳細: " + error.message;
@@ -145,11 +146,11 @@ async function drawGacha10() {
         // 10個の結果をループ
         data.results.forEach(res => {
             // レアリティに応じて色を変える
-            let colorClass = res.rarity === "星5" ? "star5" : (res.rarity === "星4" ? "star4" : "star3");
-            resultArea.innerHTML += `<div class="${colorClass}">【${res.rarity}】 ${res.character}</div>`;
+            let colorClass = res.character.rarity === "星5" ? "star5" : (res.rarity === "星4" ? "star4" : "star3");
+            resultArea.innerHTML += `<div class="${colorClass}">【${res.character.rarity}】 ${res.character.name}</div>`;
 
             // 履歴UIも更新
-            updateHistoryUI(res.character, res.rarity);
+            updateHistoryUI(res.character);
         });
 
         // UI更新
@@ -236,14 +237,14 @@ function updatePityUI(pity5, pity4, stones) {
 }
 
 // 履歴表示を更新する共通関数
-function updateHistoryUI(character, rarity) {
+function updateHistoryUI(character) {
     const historyArea = document.getElementById("history-area");
     let colorClass = "star3";
-    if (rarity === "星5") colorClass = "star5";
-    if (rarity === "星4") colorClass = "star4";
+    if (character.rarity === "星5") colorClass = "star5";
+    if (character.rarity === "星4") colorClass = "star4";
 
     // 新しい履歴を一番上に追加
-    const item = `<div class="history-item ${colorClass}">【${rarity}】 ${character}</div>`;
+    const item = `<div class="history-item ${colorClass}">【${character.rarity}】 ${character.name}</div>`;
     historyArea.innerHTML = item + historyArea.innerHTML;
     // 履歴が50件を超えたら、古いものを削除
     if (historyArea.children.length > 50) {

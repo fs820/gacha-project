@@ -18,8 +18,7 @@ type Character struct {
 
 // ガチャの結果を入れる構造体 変数名の先頭が大文字にすると外部からアクセスできる（JSONに変換するために必要）
 type GachaResult struct {
-	Rarity    string `json:"rarity"`    // レアリティ (`json:"rarity"`は、JSONに変換するときのキー名)
-	Character string `json:"character"` // キャラクター名 (`json:"character"`は、JSONに変換するときのキー名)
+	Character Character `json:"character"` // キャラクターの全情報
 }
 
 // ブラウザへ返すレスポンス

@@ -15,7 +15,7 @@ func generateOrderID() string {
 }
 
 // ユーザーが石を購入したいと仮オーダーを出す関数
-func checkoutHandler(w http.ResponseWriter, r *http.Request) {
+func (app *PublicApp) checkoutHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "POSTのみ", http.StatusMethodNotAllowed)
@@ -33,7 +33,7 @@ func checkoutHandler(w http.ResponseWriter, r *http.Request) {
 	orderID := generateOrderID()
 
 	// DBに注文を登録する
-	err = registerOrder(orderID, uid, 3000)
+	err = registerOrder(app.db, orderID, uid, 3000)
 	if err != nil {
 		http.Error(w, "注文の作成に失敗しました", http.StatusInternalServerError)
 		return
@@ -45,7 +45,7 @@ func checkoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 決済会社の決済完了通知（Webhook）を受け取るハンドラー
-func webhookHandler(w http.ResponseWriter, r *http.Request) {
+func (app *PublicApp) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "POSTのみ", http.StatusMethodNotAllowed)
@@ -66,7 +66,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(r.Body).Decode(&req)
 
 	// DBで決済の完了と石の付与をする
-	err := completeOrderTx(req.OrderID)
+	err := completeOrderTx(app.db, req.OrderID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

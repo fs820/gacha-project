@@ -11,7 +11,7 @@ import (
 )
 
 // 管理者専用：すべての履歴を削除するエンドポイント
-func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
+func (app *AdminApp) adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
@@ -19,7 +19,7 @@ func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 履歴テーブルのデータをすべて削除
-	err := cleanupHistory()
+	err := cleanupHistory(app.db)
 	if err != nil {
 		http.Error(w, "データベースの削除に失敗しました", http.StatusInternalServerError)
 		return
@@ -31,7 +31,7 @@ func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 管理者専用：指定したユーザーに石を付与するエンドポイント
-func adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
+func (app *AdminApp) adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
@@ -54,7 +54,7 @@ func adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 石を追加
-	err = addStones(targetUID, amount)
+	err = addStones(app.db, targetUID, amount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,7 +66,7 @@ func adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 管理者専用：キャラクター情報を追加するエンドポイント
-func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
+func (app *AdminApp) adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
@@ -94,7 +94,7 @@ func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターを挿入
-	err := insertCharacter(newCharacter)
+	err := insertCharacter(app.db, newCharacter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -105,7 +105,7 @@ func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 管理者専用：ピックアップキャラクターを変更するエンドポイント
-func adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
+func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
@@ -134,7 +134,7 @@ func adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターをピックアップに設定
-	err := changePickupCharacter(rarity, targetNames)
+	err := changePickupCharacter(app.db, rarity, targetNames)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -147,7 +147,7 @@ func adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 管理者専用：キャラクター情報を取得するエンドポイント
-func adminGetCharacterHandler(w http.ResponseWriter, r *http.Request) {
+func (app *AdminApp) adminGetCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
@@ -155,7 +155,7 @@ func adminGetCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターの情報を取得
-	characters := getCharacters()
+	characters := getCharacters(app.db)
 
 	// JSON形式でレスポンスを返す
 	w.Header().Set("Content-Type", "application/json")

@@ -9,23 +9,23 @@ import (
 )
 
 // ユーザーIDからデータを取得する関数
-func getUserData(uid string) *core.UserData {
+func getUserData(db *sql.DB, uid string) *core.UserData {
 	user := &core.UserData{}
 	var isGuaranteed bool // PostgreSQLのBOOLEANを安全に受け取るための一時変数
 
 	// カウンター情報の取得
-	row := core.UserDB.QueryRow("SELECT stones, star4_limit_counter, star5_limit_counter, is_next_pickup_guaranteed FROM users WHERE uid = $1", uid)
+	row := db.QueryRow("SELECT stones, star4_limit_counter, star5_limit_counter, is_next_pickup_guaranteed FROM users WHERE uid = $1", uid)
 	err := row.Scan(&user.Stones, &user.Star4LimitCounter, &user.Star5LimitCounter, &isGuaranteed)
 	if err == sql.ErrNoRows {
 		// データが無い（新規ユーザー）の場合は、初期値をDBに登録
-		core.UserDB.Exec("INSERT INTO users (uid) VALUES ($1)", uid)
+		db.Exec("INSERT INTO users (uid) VALUES ($1)", uid)
 	}
 
 	// ピックアップ保証の状態をUserDataに反映
 	user.IsNextPickupGuaranteed = isGuaranteed
 
 	// 履歴の取得新しいものを50件取得して、古い順に並び替えるs
-	rows, err := core.UserDB.Query("SELECT rarity, character FROM (SELECT id, rarity, character FROM history WHERE uid = $1 ORDER BY id DESC LIMIT 50) AS sub ORDER BY id ASC", uid)
+	rows, err := db.Query("SELECT rarity, character FROM (SELECT id, rarity, character FROM history WHERE uid = $1 ORDER BY id DESC LIMIT 50) AS sub ORDER BY id ASC", uid)
 	if err != nil {
 		log.Println("履歴取得エラー:", err)
 		return user // エラーが起きたらここで中断
@@ -35,7 +35,9 @@ func getUserData(uid string) *core.UserData {
 	// 取得した履歴をUserDataのGachaHistoryに追加
 	for rows.Next() {
 		var res core.GachaResult
-		rows.Scan(&res.Rarity, &res.Character)
+		var char core.Character
+		rows.Scan(&char.Rarity, &char.Name)
+		res.Character = char
 		user.GachaHistory = append(user.GachaHistory, res)
 	}
 
@@ -43,24 +45,24 @@ func getUserData(uid string) *core.UserData {
 }
 
 // DBに新規ユーザーを登録する関数 ※パスワードはhash済文字列
-func insertUser(uid string, username string, hashedPassword string) error {
+func insertUser(db *sql.DB, uid string, username string, hashedPassword string) error {
 	// データベースに新しいユーザーを保存
-	_, err := core.UserDB.Exec("INSERT INTO users (uid, username, password_hash) VALUES ($1, $2, $3)",
+	_, err := db.Exec("INSERT INTO users (uid, username, password_hash) VALUES ($1, $2, $3)",
 		uid, username, hashedPassword)
 	return err
 }
 
 // ユーザー名からDBを検索して uidとhash済パスワードを返す関数
-func findUser(username string) (string, string, error) {
+func findUser(db *sql.DB, username string) (string, string, error) {
 	var uid, hash string
-	err := core.UserDB.QueryRow("SELECT uid, password_hash FROM users WHERE username = $1", username).Scan(&uid, &hash)
+	err := db.QueryRow("SELECT uid, password_hash FROM users WHERE username = $1", username).Scan(&uid, &hash)
 	return uid, hash, err
 }
 
 // ガチャの結果を保存する関数 （トランザクション）
-func saveGachaResultTx(uid string, user *core.UserData, results []core.GachaResult, cost int) error {
+func saveGachaResultTx(db *sql.DB, uid string, user *core.UserData, results []core.GachaResult, cost int) error {
 	// トランザクションの開始
-	tx, err := core.UserDB.Begin()
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
@@ -75,7 +77,7 @@ func saveGachaResultTx(uid string, user *core.UserData, results []core.GachaResu
 
 	// ガチャの結果を履歴テーブルに保存
 	for _, res := range results {
-		_, err = tx.Exec("INSERT INTO history (uid, rarity, character) VALUES ($1, $2, $3)", uid, res.Rarity, res.Character)
+		_, err = tx.Exec("INSERT INTO history (uid, rarity, character) VALUES ($1, $2, $3)", uid, res.Character.Rarity, res.Character.Name)
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -87,11 +89,11 @@ func saveGachaResultTx(uid string, user *core.UserData, results []core.GachaResu
 }
 
 // DBから指定したレアリティとピックアップ条件に合うキャラクターの配列を取得する関数
-func getCharactersFromDB(rarity string, isPickup bool) []string {
-	var chars []string
+func getCharacters(db *sql.DB, rarity string, isPickup bool) []core.Character {
+	var chars []core.Character
 
 	// DBから検索
-	rows, err := core.UserDB.Query("SELECT name FROM characters WHERE rarity = $1 AND is_pickup = $2", rarity, isPickup)
+	rows, err := db.Query("SELECT name FROM characters WHERE rarity = $1 AND is_pickup = $2", rarity, isPickup)
 	if err != nil {
 		log.Println("キャラクター取得エラー:", err)
 		return chars
@@ -101,22 +103,27 @@ func getCharactersFromDB(rarity string, isPickup bool) []string {
 	for rows.Next() {
 		var name string
 		rows.Scan(&name)
-		chars = append(chars, name)
+		char := core.Character{
+			Name:     name,
+			Rarity:   rarity,
+			IsPickup: isPickup,
+		}
+		chars = append(chars, char)
 	}
 
 	return chars
 }
 
 // ユーザーの石を購入するリクエストをDBに登録する関数
-func registerOrder(orderID string, uid string, amount int) error {
-	_, err := core.UserDB.Exec("INSERT INTO orders (order_id, uid, amount, status) VALUES ($1, $2, $3, 'pending')", orderID, uid, amount)
+func registerOrder(db *sql.DB, orderID string, uid string, amount int) error {
+	_, err := db.Exec("INSERT INTO orders (order_id, uid, amount, status) VALUES ($1, $2, $3, 'pending')", orderID, uid, amount)
 	return err
 }
 
 // 決済会社が決済出来た時に呼ばれる、石を増やしえ決済を完了する関数 (トランザクション)
-func completeOrderTx(orderID string) error {
+func completeOrderTx(db *sql.DB, orderID string) error {
 	// トランザクション開始 (注文の完了、石の付与)
-	tx, err := core.UserDB.Begin()
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
