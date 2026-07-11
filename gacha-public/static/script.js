@@ -112,7 +112,7 @@ async function drawGacha() {
         const res = data.results[0];
         
         let colorClass = res.character.rarity === "星5" ? "star5" : (res.character.rarity === "星4" ? "star4" : "star3");
-        resultArea.innerHTML = `<span class="${colorClass}">【${res.rarity}】 ${res.character.name}</span>`;
+        resultArea.innerHTML = `<span class="${colorClass}">【${res.character.rarity}】 ${res.character.name}</span>`;
         
         // UI更新
         updatePityUI(data.pity5Star, data.pity4Star, data.stones);
