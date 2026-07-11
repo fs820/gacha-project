@@ -1,15 +1,18 @@
 # 作品②
 
 ## 作品URL
-[https://go-gacha-api.onrender.com] 公開URL  
-[https://gacha-admin.onrender.com]  管理者用URL  
+[https://go-gacha-api.onrender.com]  
+[https://gacha-admin.onrender.com]  
 
 学校外で趣味でGo言語中心に触れてみたガチャシミュレーターです  
 Go言語などの学習にAIを活用しております  
 ガチャシステムは実際のソーシャルゲームを元に作成しています  
 
+## 管理者サーバー用リポジトリ
+[https://github.com/fs820/gacha-admin]
+
 ## サイト画像
-![サイト画像](image/gacha_main.png)
+![サイト画像](gacha-public/image/gacha_main.png)
 
 ## 使用技術・アピールポイント
 - **言語**: Go
@@ -32,6 +35,10 @@ Go言語などの学習にAIを活用しております
 2026/06/25 ログイン処理追加 
 2026/7/2   reCAPTCHA導入 
 2026/7/4   SQLite→PostgreSQLに変更
+2026/7/10  Adminサーバーを分離し管理画面を実装
+
+## 現在の動き
+Monorepo化を行い2つのサーバーを同じプロジェクト(リポジトリ)で管理を行うようにする
 
 ## 感想
 C/C++でのゲームプログラミングを学んできた私がGo言語に触れて思ったこと  
