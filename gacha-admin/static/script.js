@@ -1,14 +1,127 @@
 // 最初にチェックボックスを生成
 window.onload = async function() {
-    const container_star5 = document.getElementById("checkboxContainer_star5");
-    const container_star4 = document.getElementById("checkboxContainer_star4");
+    createCheckboxes();
+}
 
-    const adminPass = document.getElementById("admin-pass").value;
+// キャラクターの追加
+async function insertCharacter() {
+    const name = document.getElementById("charName").value;
+    const rarity = document.getElementById("charRarity").value;
 
-    if (!adminPass) {
-        alert("管理者パスワードを入力してください");
+    if (!name || !rarity) {
+        alert("すべてのフィールドを入力してください");
         return;
     }
+
+    try {
+        const response = await fetch(`/admin/insert_character?name=${encodeURIComponent(name)}&rarity=${encodeURIComponent(rarity)}`, {
+            method: "POST",
+        });
+        const text = await response.text();
+        alert(text);
+    }
+    catch (error) {
+        alert("通信エラーが発生しました");
+    }
+}
+
+// ピックアップ変更
+async function changePickUp(rarity, names) {
+    try {
+        const response = await fetch(`/admin/update_pickup?rarity=${encodeURIComponent(rarity)}&name=${encodeURIComponent(names)}`, {
+            method: "POST",
+        });
+        const text = await response.text();
+        alert(text);
+    } catch (error) {
+        alert("通信エラーが発生しました");
+    }
+}
+
+// ピックアップの決定ボタンがクリックされたときの処理
+document.getElementById("submitButton").addEventListener("click", () => {
+    // チェックされている星5のキャラクター1体を取得
+    const selected = [];
+    document.querySelectorAll("#checkboxContainer_star5 input[type='radio']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selected.push(cb.value);
+            }
+        });
+    if (selected.length == 1) {
+        changePickUp("星5", selected[0]);
+    } else {
+        alert("星5のキャラクターは1体だけ選択してください");
+        return;
+    }
+
+    // チェックされている星4のキャラクター3体までを取得
+    const selected2 = [];
+    document.querySelectorAll("#checkboxContainer_star4 input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selected2.push(cb.value);
+            }
+        });
+    if (selected2.length > 0 && selected2.length <= 3) {
+        changePickUp("星4", selected2.join(","));
+    } else {
+        alert("星4のキャラクターは1体以上3体まで選択してください");
+        return;
+    }
+});
+
+// 石の付与
+async function addStone() {
+    const uid = document.getElementById("uid").value;
+    const amount = document.getElementById("amount").value;
+
+    if (!uid || !amount) {
+        alert("すべてのフィールドを入力してください");
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/add_stone?uid=${encodeURIComponent(uid)}&amount=${encodeURIComponent(amount)}`, {
+            method: "POST",
+        });
+        const text = await response.text();
+        alert(text);
+    } catch (error) {
+        alert("通信エラーが発生しました");
+    }
+}
+
+// 履歴の削除
+async function deleteHistory() {
+    if (!confirm("本当に履歴を削除しますか？")) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/delete_history`, {
+            method: "POST",
+        });
+        const text = await response.text();
+        alert(text);
+    } catch (error) {
+        alert("通信エラーが発生しました");
+    }
+}
+
+// ページ切り替え
+function showPage(id) {
+    document.querySelectorAll(".page").forEach(page => {
+        page.style.display = "none";
+    });
+
+    document.getElementById(id).style.display = "block";
+}
+
+// チェックボックスを生成する関数
+async function createCheckboxes() {
+    const container_star5 = document.getElementById("checkboxContainer_star5");
+    const container_star4 = document.getElementById("checkboxContainer_star4");
 
     items_star5 = [];
     items_star4 = [];
@@ -16,9 +129,6 @@ window.onload = async function() {
     try {
         const response = await fetch(`/admin/get_character`, {
             method: "POST",
-            headers: {
-                Authorization: `Bearer ${adminPass}`,
-            }
         });
         const data = await response.json();
 
@@ -73,15 +183,6 @@ window.onload = async function() {
     setupCheckboxLimit()
 }
 
-// ページ切り替え
-function showPage(id) {
-    document.querySelectorAll(".page").forEach(page => {
-        page.style.display = "none";
-    });
-
-    document.getElementById(id).style.display = "block";
-}
-
 // チェックボックスの制限を設定
 function setupCheckboxLimit() {
     // 星4
@@ -98,148 +199,4 @@ function setupCheckboxLimit() {
                 }
             });
         });
-}
-
-// 決定ボタンがクリックされたときの処理
-document.getElementById("submitButton").addEventListener("click", () => {
-    // チェックされている星5のキャラクター1体を取得
-    const selected = [];
-    document.querySelectorAll("#checkboxContainer_star5 input[type='radio']")
-        .forEach(cb => {
-            if (cb.checked) {
-                selected.push(cb.value);
-            }
-        });
-    if (selected.length == 1) {
-        changePickUp("星5", selected[0]);
-    } else {
-        alert("星5のキャラクターは1体だけ選択してください");
-        return;
-    }
-
-    // チェックされている星4のキャラクター3体までを取得
-    const selected2 = [];
-    document.querySelectorAll("#checkboxContainer_star4 input[type='checkbox']")
-        .forEach(cb => {
-            if (cb.checked) {
-                selected2.push(cb.value);
-            }
-        });
-    if (selected2.length > 0 && selected2.length <= 3) {
-        changePickUp("星4", selected2.join(","));
-    } else {
-        alert("星4のキャラクターは1体以上3体まで選択してください");
-        return;
-    }
-});
-
-// キャラクターの追加
-async function insertCharacter() {
-    const name = document.getElementById("charName").value;
-    const rarity = document.getElementById("charRarity").value;
-
-    const adminPass = document.getElementById("admin-pass").value;
-
-    if (!adminPass) {
-        alert("管理者パスワードを入力してください");
-        return;
-    }
-    if (!name || !rarity) {
-        alert("すべてのフィールドを入力してください");
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/insert_character?name=${encodeURIComponent(name)}&rarity=${encodeURIComponent(rarity)}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${adminPass}`,
-            }
-        });
-        const text = await response.text();
-        alert(text);
-    }
-    catch (error) {
-        alert("通信エラーが発生しました");
-    }
-}
-
-// ピックアップ変更
-async function changePickUp(rarity, names) {
-    const adminPass = document.getElementById("admin-pass").value;
-
-    if (!adminPass) {
-        alert("管理者パスワードを入力してください");
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/update_pickup?rarity=${encodeURIComponent(rarity)}&name=${encodeURIComponent(names)}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${adminPass}`,
-            }
-        });
-        const text = await response.text();
-        alert(text);
-    } catch (error) {
-        alert("通信エラーが発生しました");
-    }
-}
-
-// 石の付与
-async function addStone() {
-    const uid = document.getElementById("uid").value;
-    const amount = document.getElementById("amount").value;
-
-    const adminPass = document.getElementById("admin-pass").value;
-
-    if (!adminPass) {
-        alert("管理者パスワードを入力してください");
-        return;
-    }
-    if (!uid || !amount) {
-        alert("すべてのフィールドを入力してください");
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/add_stone?uid=${encodeURIComponent(uid)}&amount=${encodeURIComponent(amount)}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${adminPass}`,
-            }
-        });
-        const text = await response.text();
-        alert(text);
-    } catch (error) {
-        alert("通信エラーが発生しました");
-    }
-}
-
-// 履歴の削除
-async function deleteHistory() {
-    const adminPass = document.getElementById("admin-pass").value;
-
-    if (!adminPass) {
-        alert("管理者パスワードを入力してください");
-        return;
-    }
-
-    if (!confirm("本当に履歴を削除しますか？")) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/delete_history`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${adminPass}`,
-            }
-        });
-        const text = await response.text();
-        alert(text);
-    } catch (error) {
-        alert("通信エラーが発生しました");
-    }
 }

@@ -42,11 +42,11 @@ func main() {
 	http.Handle("/", basicAuth(fs))
 
 	// 管理者用エンドポイント
-	http.HandleFunc("/admin/delete_history", adminDeleteHistoryHandler)
-	http.HandleFunc("/admin/add_stones", adminAddStonesHandler)
-	http.HandleFunc("/admin/insert_character", adminInsertCharacterHandler)
-	http.HandleFunc("/admin/update_pickup", adminUpdatePickupHandler)
-	http.HandleFunc("/admin/get_character", adminGetCharacterHandler)
+	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(adminDeleteHistoryHandler)))
+	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(adminAddStonesHandler)))
+	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(adminInsertCharacterHandler)))
+	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(adminUpdatePickupHandler)))
+	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(adminGetCharacterHandler)))
 
 	// サーバー起動のメッセージを表示
 	fmt.Println("サーバーを起動しました！ ブラウザで http://localhost:8081 にアクセスしてください。")
