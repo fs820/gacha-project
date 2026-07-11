@@ -5,9 +5,25 @@ import (
 	"fmt" // フォーマット用 (文字列の整形など)
 	"log"
 	"net/http" // HTTPサーバーの構築に使用
+	"os"
 
 	"github.com/joho/godotenv" // .env ファイルを読み込むためのライブラリ
 )
+
+// Basic認証用のミドルウェア関数を作る
+func basicAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		password := os.Getenv("PASSWORD")
+		// ユーザー名とパスワードを判定
+		if !ok || user != "admin" || pass != password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
 
 // メイン関数
 func main() {
@@ -22,7 +38,8 @@ func main() {
 
 	// "static"フォルダの中身（HTML, CSS, JS）を、そのままブラウザに公開する設定
 	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/", fs)
+	// Basic認証をかけて、静的ファイルを提供する
+	http.Handle("/", basicAuth(fs))
 
 	// 管理者用エンドポイント
 	http.HandleFunc("/admin/delete_history", adminDeleteHistoryHandler)

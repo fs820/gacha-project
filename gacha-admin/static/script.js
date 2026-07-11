@@ -3,6 +3,13 @@ window.onload = async function() {
     const container_star5 = document.getElementById("checkboxContainer_star5");
     const container_star4 = document.getElementById("checkboxContainer_star4");
 
+    const adminPass = document.getElementById("admin-pass").value;
+
+    if (!adminPass) {
+        alert("管理者パスワードを入力してください");
+        return;
+    }
+
     items_star5 = [];
     items_star4 = [];
 
@@ -10,7 +17,7 @@ window.onload = async function() {
         const response = await fetch(`/admin/get_character`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer supersecret`,
+                Authorization: `Bearer ${adminPass}`,
             }
         });
         const data = await response.json();
@@ -126,10 +133,17 @@ document.getElementById("submitButton").addEventListener("click", () => {
     }
 });
 
+// キャラクターの追加
 async function insertCharacter() {
     const name = document.getElementById("charName").value;
     const rarity = document.getElementById("charRarity").value;
 
+    const adminPass = document.getElementById("admin-pass").value;
+
+    if (!adminPass) {
+        alert("管理者パスワードを入力してください");
+        return;
+    }
     if (!name || !rarity) {
         alert("すべてのフィールドを入力してください");
         return;
@@ -139,7 +153,7 @@ async function insertCharacter() {
         const response = await fetch(`/admin/insert_character?name=${encodeURIComponent(name)}&rarity=${encodeURIComponent(rarity)}`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer supersecret`,
+                Authorization: `Bearer ${adminPass}`,
             }
         });
         const text = await response.text();
@@ -152,11 +166,18 @@ async function insertCharacter() {
 
 // ピックアップ変更
 async function changePickUp(rarity, names) {
+    const adminPass = document.getElementById("admin-pass").value;
+
+    if (!adminPass) {
+        alert("管理者パスワードを入力してください");
+        return;
+    }
+
     try {
         const response = await fetch(`/admin/update_pickup?rarity=${encodeURIComponent(rarity)}&name=${encodeURIComponent(names)}`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer supersecret`,
+                Authorization: `Bearer ${adminPass}`,
             }
         });
         const text = await response.text();
@@ -171,6 +192,12 @@ async function addStone() {
     const uid = document.getElementById("uid").value;
     const amount = document.getElementById("amount").value;
 
+    const adminPass = document.getElementById("admin-pass").value;
+
+    if (!adminPass) {
+        alert("管理者パスワードを入力してください");
+        return;
+    }
     if (!uid || !amount) {
         alert("すべてのフィールドを入力してください");
         return;
@@ -180,7 +207,7 @@ async function addStone() {
         const response = await fetch(`/admin/add_stone?uid=${encodeURIComponent(uid)}&amount=${encodeURIComponent(amount)}`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer supersecret`,
+                Authorization: `Bearer ${adminPass}`,
             }
         });
         const text = await response.text();
@@ -192,6 +219,13 @@ async function addStone() {
 
 // 履歴の削除
 async function deleteHistory() {
+    const adminPass = document.getElementById("admin-pass").value;
+
+    if (!adminPass) {
+        alert("管理者パスワードを入力してください");
+        return;
+    }
+
     if (!confirm("本当に履歴を削除しますか？")) {
         return;
     }
@@ -200,7 +234,7 @@ async function deleteHistory() {
         const response = await fetch(`/admin/delete_history`, {
             method: "POST",
             headers: {
-                Authorization: `Bearer supersecret`,
+                Authorization: `Bearer ${adminPass}`,
             }
         });
         const text = await response.text();

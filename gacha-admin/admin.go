@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http" // HTTPサーバーの構築に使用
+	"os"
 	"strconv"
 	"strings"
 )
@@ -16,8 +17,6 @@ type Character struct {
 	IsPickup bool   `json:"isPickup"`
 }
 
-const PASSWORD = "Bearer supersecret"
-
 // 管理者専用：すべての履歴を削除するエンドポイント
 func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
@@ -28,7 +27,8 @@ func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 
 	// パスワードチェック
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != PASSWORD {
+	password := os.Getenv("PASSWORD")
+	if authHeader != "Bearer "+password {
 		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
@@ -55,7 +55,8 @@ func adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
 
 	// パスワードチェック
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != PASSWORD {
+	password := os.Getenv("PASSWORD")
+	if authHeader != "Bearer "+password {
 		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
@@ -97,7 +98,8 @@ func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// パスワードチェック
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != PASSWORD {
+	password := os.Getenv("PASSWORD")
+	if authHeader != "Bearer "+password {
 		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
@@ -143,7 +145,8 @@ func adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 
 	// パスワードチェック
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != PASSWORD {
+	password := os.Getenv("PASSWORD")
+	if authHeader != "Bearer "+password {
 		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
@@ -192,7 +195,8 @@ func adminGetCharacterHandler(w http.ResponseWriter, r *http.Request) {
 
 	// パスワードチェック
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != PASSWORD {
+	password := os.Getenv("PASSWORD")
+	if authHeader != "Bearer "+password {
 		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
