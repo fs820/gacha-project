@@ -8,9 +8,6 @@
 Go言語などの学習にAIを活用しております  
 ガチャシステムは実際のソーシャルゲームを元に作成しています  
 
-## 管理者サーバー用リポジトリ
-[https://github.com/fs820/gacha-admin]
-
 ## サイト画像
 ![サイト画像](gacha-public/image/gacha_main.png)
 
