@@ -1,7 +1,8 @@
 # 作品②
 
 ## 作品URL
-[https://go-gacha-api.onrender.com]
+[https://go-gacha-api.onrender.com] 公開URL  
+[https://gacha-admin.onrender.com]  管理者用URL  
 
 学校外で趣味でGo言語中心に触れてみたガチャシミュレーターです  
 Go言語などの学習にAIを活用しております  
