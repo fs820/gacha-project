@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http" // HTTPサーバーの構築に使用
-	"os"
 	"strconv"
 	"strings"
 )
@@ -22,14 +21,6 @@ func adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// パスワードチェック
-	authHeader := r.Header.Get("Authorization")
-	password := os.Getenv("PASSWORD")
-	if authHeader != "Bearer "+password {
-		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
 
@@ -50,14 +41,6 @@ func adminAddStonesHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// パスワードチェック
-	authHeader := r.Header.Get("Authorization")
-	password := os.Getenv("PASSWORD")
-	if authHeader != "Bearer "+password {
-		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
 
@@ -93,14 +76,6 @@ func adminInsertCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// パスワードチェック
-	authHeader := r.Header.Get("Authorization")
-	password := os.Getenv("PASSWORD")
-	if authHeader != "Bearer "+password {
-		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
 
@@ -143,14 +118,6 @@ func adminUpdatePickupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// パスワードチェック
-	authHeader := r.Header.Get("Authorization")
-	password := os.Getenv("PASSWORD")
-	if authHeader != "Bearer "+password {
-		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
-		return
-	}
-
 	// URLから変更したいレアリティを取得（例: ?rarity=星5）
 	rarity := r.URL.Query().Get("rarity")
 	if rarity == "" {
@@ -190,14 +157,6 @@ func adminGetCharacterHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
 		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// パスワードチェック
-	authHeader := r.Header.Get("Authorization")
-	password := os.Getenv("PASSWORD")
-	if authHeader != "Bearer "+password {
-		http.Error(w, "権限がありません (Unauthorized)", http.StatusUnauthorized)
 		return
 	}
 
