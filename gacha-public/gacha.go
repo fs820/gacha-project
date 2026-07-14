@@ -14,21 +14,6 @@ const (
 	// cookieの日数
 	cookieDays = 30           // セッションIDを保存するCookieの有効期限（日数）
 	oneDay     = 24 * 60 * 60 // 1日の秒数（CookieのMaxAgeに使用）
-
-	// ガチャ1回あたりの石の消費量
-	gachaCost = 300
-
-	// ガチャの確率を定数として定義
-	probBaseStar5 = 6  // 星5の当たる基本確率（6/1000 = 0.6%）
-	probBaseStar4 = 51 // 星4の当たる基本確率（51/1000 = 5.1%）
-
-	// 天井の回数を定数として定義
-	star4Limit = 10 // 星4以上が出るまでの回数
-	star5Limit = 90 // 星5が出るまでの回数
-
-	// ソフトピティの設定
-	pitySoftStart     = 74 // 確率が上がり始める回数
-	softPityIncrement = 6  // 確率が上がる割合 (6%ずつ増加)
 )
 
 // ガチャの処理を行う関数
@@ -43,24 +28,27 @@ func (app *PublicApp) gachaHandler(w http.ResponseWriter, r *http.Request) {
 	// ユーザーIDからユーザーデータを取得
 	user := getUserData(app.db, uid)
 
+	//ガチャバナーの取得
+	gachaBanner := getGachaBanner(app.db, "恒常ガチャ")
+
 	// 石の所持数をチェックして、足りない場合はエラーを返す
-	if user.Stones < gachaCost {
+	if user.Stones < gachaBanner.Cost {
 		http.Error(w, "石が足りません！", http.StatusBadRequest)
 		return
 	}
 
 	// ガチャの結果を判定する関数を呼び出して、結果を取得
-	result := gachaJudgment(app.db, user)
+	result := gachaJudgment(app.db, user, "恒常ガチャ")
 
 	// DB保存
-	err = saveGachaResultTx(app.db, uid, user, []core.GachaResult{result}, gachaCost)
+	err = saveGachaResultTx(app.db, uid, user, []core.GachaResult{result}, gachaBanner.Cost)
 	if err != nil {
 		http.Error(w, "サーバーエラーが発生しました", http.StatusInternalServerError)
 		return
 	}
 
 	// 石を消費
-	user.Stones -= gachaCost
+	user.Stones -= gachaBanner.Cost
 
 	// 履歴に追加 (50件を超えていたら、一番古い要素を切り捨てる)
 	user.GachaHistory = append(user.GachaHistory, result)
@@ -70,7 +58,7 @@ func (app *PublicApp) gachaHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// レスポンス作成
-	sendGachaResponse(w, []core.GachaResult{result}, user)
+	sendGachaResponse(w, app.db, []core.GachaResult{result}, user)
 }
 
 // 10連ガチャの処理を行う関数
@@ -85,8 +73,11 @@ func (app *PublicApp) gacha10Handler(w http.ResponseWriter, r *http.Request) {
 	// ユーザーIDからユーザーデータを取得
 	user := getUserData(app.db, uid)
 
+	//ガチャバナーの取得
+	gachaBanner := getGachaBanner(app.db, "恒常ガチャ")
+
 	// 石の所持数をチェックして、足りない場合はエラーを返す
-	if user.Stones < gachaCost*10 {
+	if user.Stones < gachaBanner.Cost*10 {
 		http.Error(w, "石が足りません！", http.StatusBadRequest)
 		return
 	}
@@ -94,7 +85,7 @@ func (app *PublicApp) gacha10Handler(w http.ResponseWriter, r *http.Request) {
 	var results []core.GachaResult
 	for i := 0; i < 10; i++ {
 		// ガチャの結果を判定する関数を呼び出して、結果を取得して、resultsの配列に追加
-		result := gachaJudgment(app.db, user)
+		result := gachaJudgment(app.db, user, "恒常ガチャ")
 		results = append(results, result)
 
 		// 履歴に追加 (50件を超えていたら、一番古い要素を切り捨てる)
@@ -106,17 +97,17 @@ func (app *PublicApp) gacha10Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// DB保存
-	err = saveGachaResultTx(app.db, uid, user, results, gachaCost*10)
+	err = saveGachaResultTx(app.db, uid, user, results, gachaBanner.Cost*10)
 	if err != nil {
 		http.Error(w, "サーバーエラーが発生しました", http.StatusInternalServerError)
 		return
 	}
 
 	// 石を消費
-	user.Stones -= gachaCost * 10
+	user.Stones -= gachaBanner.Cost * 10
 
 	// レスポンス作成
-	sendGachaResponse(w, results, user)
+	sendGachaResponse(w, app.db, results, user)
 }
 
 // 天井カウンターを返すハンドラー
@@ -131,10 +122,13 @@ func (app *PublicApp) limitHandler(w http.ResponseWriter, r *http.Request) {
 	// ユーザーIDからユーザーデータを取得
 	user := getUserData(app.db, uid)
 
+	//ガチャバナーの取得
+	gachaBanner := getGachaBanner(app.db, "恒常ガチャ")
+
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(map[string]int{
-		"star4LimitCounter": star4Limit - user.Star4LimitCounter,
-		"star5LimitCounter": star5Limit - user.Star5LimitCounter,
+		"star4LimitCounter": gachaBanner.Star4Limit - user.Star4LimitCounter,
+		"star5LimitCounter": gachaBanner.Star5Limit - user.Star5LimitCounter,
 		"stones":            user.Stones,
 	})
 }
@@ -163,11 +157,14 @@ func (app *PublicApp) historyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 共通のレスポンス送信処理
-func sendGachaResponse(w http.ResponseWriter, results []core.GachaResult, user *core.UserData) {
+func sendGachaResponse(w http.ResponseWriter, db *sql.DB, results []core.GachaResult, user *core.UserData) {
+	//ガチャバナーの取得
+	gachaBanner := getGachaBanner(db, "恒常ガチャ")
+
 	response := core.GachaResponse{
 		Results:   results,
-		Pity5Star: star5Limit - user.Star5LimitCounter, // あと何回か
-		Pity4Star: star4Limit - user.Star4LimitCounter,
+		Pity5Star: gachaBanner.Star5Limit - user.Star5LimitCounter, // あと何回か
+		Pity4Star: gachaBanner.Star4Limit - user.Star4LimitCounter,
 		Stones:    user.Stones, // 所持石数
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -175,67 +172,69 @@ func sendGachaResponse(w http.ResponseWriter, results []core.GachaResult, user *
 }
 
 // ガチャの結果を判定する関数
-func gachaJudgment(db *sql.DB, user *core.UserData) core.GachaResult {
+func gachaJudgment(db *sql.DB, user *core.UserData, bannerTitle string) core.GachaResult {
 	// カウンターをインクリメント
 	user.Star4LimitCounter++ // 星4以上が出るまでのカウンター
 	user.Star5LimitCounter++ // 星5が出るまでのカウンター
+
+	//ガチャバナーの取得
+	gachaBanner := getGachaBanner(db, bannerTitle)
+
+	// ピックアップキャラの取得
+	pickupCharacters := getPickupCharacters(db, bannerTitle)
 
 	// 0〜999の乱数を生成
 	roll := rand.IntN(1000)
 
 	// 星5の当たる確率（6/1000 = 0.6%）
-	star5Prob := probBaseStar5
+	star5Prob := gachaBanner.ProbBaseStar5
 
 	// ソフトピティの確率上昇の判定
-	if user.Star5LimitCounter >= pitySoftStart {
+	if user.Star5LimitCounter >= gachaBanner.PitySoftStart {
 		// 74連目以降は、6%ずつ確率が上昇
-		star5Prob += softPityIncrement * (user.Star5LimitCounter - (pitySoftStart - 1))
+		star5Prob += gachaBanner.SoftPityIncrement * (user.Star5LimitCounter - (gachaBanner.PitySoftStart - 1))
 	}
 
 	// 確率の判定
-	if roll < star5Prob || user.Star5LimitCounter >= star5Limit {
+	if roll < star5Prob || user.Star5LimitCounter >= gachaBanner.Star5Limit {
 		// 0.6%の確率で星5 （もしくは、天井カウンターが90連目の場合は強制的に星5）
 		user.Star4LimitCounter = 0 // カウンターをリセット
 		user.Star5LimitCounter = 0 // カウンターをリセット
 
 		// ピックアップキャラクターの当選判定を行う関数を呼び出す
-		return pickupJudgment(db, user)
-	} else if roll < (star5Prob+probBaseStar4) || user.Star4LimitCounter >= star4Limit {
+		return pickupJudgment(db, user, gachaBanner.Star5PickupProb, pickupCharacters.Star5, getConstantCharacters(db))
+	} else if roll < (star5Prob+gachaBanner.ProbBaseStar4) || user.Star4LimitCounter >= gachaBanner.Star4Limit {
 		// 5.1%の確率で星4 （もしくは、天井カウンターが10連目の場合は強制的に星4）
 		user.Star4LimitCounter = 0 // カウンターをリセット
 
-		pickupStar4 := getCharacters(db, "星4", true) // ピックアップ星4キャラクターのリストをDBから取得
-		randomIndex := rand.IntN(len(pickupStar4))   // ピックアップ星4キャラクターの中からランダムに選ぶ
-		return core.GachaResult{Character: pickupStar4[randomIndex]}
+		randomIndex := rand.IntN(len(pickupCharacters.Star4)) // ピックアップ星4キャラクターの中からランダムに選ぶ
+		return core.GachaResult{Character: pickupCharacters.Star4[randomIndex]}
 	} else {
 		// 94.3%の確率で星3
-		star3 := getCharacters(db, "星3", false) // 星3キャラクターのリストをDBから取得
-		randomIndex := rand.IntN(len(star3))    // 星3キャラクターの中からランダムに選ぶ
+		star3 := getStar3Characters(db)      // 星3キャラクターのリストをDBから取得
+		randomIndex := rand.IntN(len(star3)) // 星3キャラクターの中からランダムに選ぶ
 		return core.GachaResult{Character: star3[randomIndex]}
 	}
 }
 
 // ピックアップキャラクターの当選判定を行う関数
-func pickupJudgment(db *sql.DB, user *core.UserData) core.GachaResult {
+func pickupJudgment(db *sql.DB, user *core.UserData, pickupProb int, pickupCharacters []core.Character, constantCharacters []core.Character) core.GachaResult {
 	// ピックアップキャラクターが確定している場合は、ピックアップキャラクターを返す
 	if user.IsNextPickupGuaranteed {
 		user.IsNextPickupGuaranteed = false // フラグをリセット
 
-		pickupStar5 := getCharacters(db, "星5", true)                 // ピックアップ星5キャラクターのリストをDBから取得
-		randomIndex := rand.IntN(len(pickupStar5))                   // ピックアップ星5キャラクターの中からランダムに選ぶ
-		return core.GachaResult{Character: pickupStar5[randomIndex]} // ピックアップキャラクターの中から1体を返す（今回は1体しかいない想定）
+		randomIndex := rand.IntN(len(pickupCharacters))                   // ピックアップ星5キャラクターの中からランダムに選ぶ
+		return core.GachaResult{Character: pickupCharacters[randomIndex]} // ピックアップキャラクターの中から1体を返す
 	} else {
 		// ピックアップキャラクターが確定していない場合は、50%の確率でピックアップキャラクター、50%の確率ですり抜けキャラクターを返す
-		if rand.IntN(2) == 0 {
-			pickupStar5 := getCharacters(db, "星5", true) // ピックアップ星5キャラクターのリストをDBから取得
-			randomIndex := rand.IntN(len(pickupStar5))   // ピックアップ星5キャラクターの中からランダムに選ぶ
-			return core.GachaResult{Character: pickupStar5[randomIndex]}
+		if rand.IntN(100) < pickupProb {
+			randomIndex := rand.IntN(len(pickupCharacters)) // ピックアップ星5キャラクターの中からランダムに選ぶ
+			return core.GachaResult{Character: pickupCharacters[randomIndex]}
 		} else {
 			user.IsNextPickupGuaranteed = true // 次のガチャでピックアップキャラクターが確定するようにフラグをセット
 
-			standardStar5 := getCharacters(db, "星5", false) // すり抜け星5キャラクターのリストをDBから取得
-			randomIndex := rand.IntN(len(standardStar5))    // すり抜けキャラクターの中からランダムに選ぶ
-			return core.GachaResult{Character: standardStar5[randomIndex]}
+			randomIndex := rand.IntN(len(constantCharacters)) // すり抜けキャラクターの中からランダムに選ぶ
+			return core.GachaResult{Character: constantCharacters[randomIndex]}
 		}
 	}
 }

@@ -13,9 +13,19 @@ async function insertCharacter() {
         return;
     }
 
+    // 渡すデータ
+    const requestData = {
+        rarity: rarity,
+        name: name
+    };
+
     try {
-        const response = await fetch(`/admin/insert_character?name=${encodeURIComponent(name)}&rarity=${encodeURIComponent(rarity)}`, {
+        const response = await fetch(`/admin/insert_character`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
         });
         const text = await response.text();
         alert(text);
@@ -27,9 +37,19 @@ async function insertCharacter() {
 
 // ピックアップ変更
 async function changePickUp(rarity, names) {
+    // 渡すデータ
+    const requestData = {
+        rarity: rarity,
+        names: names
+    };
+
     try {
-        const response = await fetch(`/admin/update_pickup?rarity=${encodeURIComponent(rarity)}&name=${encodeURIComponent(names)}`, {
+        const response = await fetch(`/admin/update_pickup`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
         });
         const text = await response.text();
         alert(text);
@@ -40,22 +60,17 @@ async function changePickUp(rarity, names) {
 
 // ピックアップの決定ボタンがクリックされたときの処理
 document.getElementById("submitButton").addEventListener("click", () => {
-    // チェックされている星5のキャラクター1体を取得
+    // チェックされている星5のキャラクターを取得
     const selected = [];
-    document.querySelectorAll("#checkboxContainer_star5 input[type='radio']")
+    document.querySelectorAll("#checkboxContainer_star5 input[type='checkbox']")
         .forEach(cb => {
             if (cb.checked) {
                 selected.push(cb.value);
             }
         });
-    if (selected.length == 1) {
-        changePickUp("星5", selected[0]);
-    } else {
-        alert("星5のキャラクターは1体だけ選択してください");
-        return;
-    }
+    changePickUp("星5", selected.join(","));
 
-    // チェックされている星4のキャラクター3体までを取得
+    // チェックされている星4のキャラクターを取得
     const selected2 = [];
     document.querySelectorAll("#checkboxContainer_star4 input[type='checkbox']")
         .forEach(cb => {
@@ -63,12 +78,7 @@ document.getElementById("submitButton").addEventListener("click", () => {
                 selected2.push(cb.value);
             }
         });
-    if (selected2.length > 0 && selected2.length <= 3) {
-        changePickUp("星4", selected2.join(","));
-    } else {
-        alert("星4のキャラクターは1体以上3体まで選択してください");
-        return;
-    }
+    changePickUp("星4", selected2.join(","));
 });
 
 // 石の付与
@@ -81,9 +91,19 @@ async function addStone() {
         return;
     }
 
+    // 渡すデータ
+    const requestData = {
+        uid: uid,
+        amount: amount
+    };
+
     try {
-        const response = await fetch(`/admin/add_stone?uid=${encodeURIComponent(uid)}&amount=${encodeURIComponent(amount)}`, {
+        const response = await fetch(`/admin/add_stone`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestData)
         });
         const text = await response.text();
         alert(text);
@@ -152,8 +172,7 @@ async function createCheckboxes() {
         const label = document.createElement("label");
 
         const checkbox = document.createElement("input");
-        checkbox.type = "radio";
-        checkbox.name = "star5";
+        checkbox.type = "checkbox";
         checkbox.value = item.name;
         checkbox.checked = item.isPickup; // isPickupがtrueの場合はチェックを入れる
 
@@ -178,25 +197,4 @@ async function createCheckboxes() {
         container_star4.appendChild(label);
         container_star4.appendChild(document.createElement("br"));
     });
-
-    // チェックボックスの制限を設定
-    setupCheckboxLimit()
-}
-
-// チェックボックスの制限を設定
-function setupCheckboxLimit() {
-    // 星4
-    document.querySelectorAll("#checkboxContainer_star4 input[type='checkbox']")
-        .forEach(cb => {
-            cb.addEventListener("change", () => {
-                const checked = document.querySelectorAll(
-                    "#checkboxContainer_star4 input[type='checkbox']:checked"
-                );
-
-                if (checked.length > 3) {
-                    cb.checked = false;
-                    alert("星4は3体まで選択できます。");
-                }
-            });
-        });
 }

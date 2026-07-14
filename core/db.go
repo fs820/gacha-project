@@ -35,21 +35,7 @@ func InitSchema(db *sql.DB) error {
 		star5_limit_counter INTEGER DEFAULT 0,
 		is_next_pickup_guaranteed BOOLEAN DEFAULT false
 	);`
-	_, err = db.Exec(usersTable)
-	if err != nil {
-		return err
-	}
-
-	// ガチャの履歴を保存するテーブルを作成
-	historyTable := `
-	CREATE TABLE IF NOT EXISTS history (
-		id SERIAL PRIMARY KEY,
-		uid TEXT,
-		rarity TEXT,
-		character TEXT
-	);`
-	_, err = db.Exec(historyTable)
-	if err != nil {
+	if _, err = db.Exec(usersTable); err != nil {
 		return err
 	}
 
@@ -57,16 +43,14 @@ func InitSchema(db *sql.DB) error {
 	charactersTable := `
 	CREATE TABLE IF NOT EXISTS characters (
 		id SERIAL PRIMARY KEY,
-		name TEXT,
-		rarity TEXT,
-		is_pickup BOOLEAN DEFAULT false
+        name TEXT UNIQUE NOT NULL,
+		rarity TEXT NOT NULL
 	);`
-	_, err = db.Exec(charactersTable)
-	if err != nil {
+	if _, err = db.Exec(charactersTable); err != nil {
 		return err
 	}
 
-	// もしキャラクターテーブルが空の場合初期化
+	// もしキャラクターテーブルが空の場合恒常キャラクターを挿入
 	var count int
 	db.QueryRow("SELECT COUNT(*) FROM characters").Scan(&count)
 	if count == 0 {
@@ -94,6 +78,63 @@ func InitSchema(db *sql.DB) error {
 			db.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
 				c.name, c.rarity, c.isPickup)
 		}
+	}
+
+	// ガチャテーブル
+	bannersTable := `
+	CREATE TABLE IF NOT EXISTS gacha_banners (
+		id SERIAL PRIMARY KEY,
+		title TEXT NOT NULL,
+		cost INTEGER NOT NULL DEFAULT 300,
+		prob_star5 INTEGER NOT NULL DEFAULT 6,
+		prob_star4 INTEGER NOT NULL DEFAULT 51,
+		star5_limit INTEGER NOT NULL DEFAULT 90,
+		star4_limit INTEGER NOT NULL DEFAULT 10,
+		star5_pickup_prob INTEGER NOT NULL DEFAULT 100,
+		pity_soft_start INTEGER NOT NULL DEFAULT 74,
+		soft_pity_increment INTEGER NOT NULL DEFAULT 6
+	);`
+	if _, err := db.Exec(bannersTable); err != nil {
+		return err
+	}
+
+	// ガチャがない場合デフォルトのガチャ設定を1つだけ自動作成する
+	var bannerCount int
+	db.QueryRow("SELECT COUNT(*) FROM gacha_banners").Scan(&bannerCount)
+	if bannerCount == 0 {
+		db.Exec(`INSERT INTO gacha_banners (title) VALUES ('恒常ガチャ')`)
+	}
+
+	// ピックアップテーブル（中間テーブル）
+	pickupsTable := `
+	CREATE TABLE IF NOT EXISTS banner_pickups (
+		banner_id INTEGER REFERENCES gacha_banners(id) ON DELETE CASCADE,
+		character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE,
+		PRIMARY KEY (banner_id, character_id)
+	);`
+	if _, err := db.Exec(pickupsTable); err != nil {
+		return err
+	}
+
+	// 恒常テーブル（中間テーブル）
+	constantTable := `
+	CREATE TABLE IF NOT EXISTS constant_characters (
+		PRIMARY character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE
+	);`
+	if _, err := db.Exec(constantTable); err != nil {
+		return err
+	}
+
+	// ガチャの履歴を保存するテーブルを作成
+	historyTable := `
+	CREATE TABLE IF NOT EXISTS history (
+		id SERIAL PRIMARY KEY,
+		uid TEXT REFERENCES users(uid) ON DELETE CASCADE,
+		rarity TEXT NOT NULL,
+		character TEXT NOT NULL
+	);`
+	if _, err = db.Exec(historyTable); err != nil {
+		return err
 	}
 
 	// 決済の注文状態を管理するテーブルを作成

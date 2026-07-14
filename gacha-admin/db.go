@@ -26,7 +26,7 @@ func getCharacters(db *sql.DB) []core.Character {
 	var chars []core.Character
 
 	// DBから検索
-	rows, err := db.Query("SELECT name, rarity, is_pickup FROM characters")
+	rows, err := db.Query("SELECT id name, rarity FROM characters")
 	if err != nil {
 		log.Println("キャラクター取得エラー:", err)
 		return chars
@@ -36,7 +36,7 @@ func getCharacters(db *sql.DB) []core.Character {
 	// 取得したデータを構造体に格納
 	for rows.Next() {
 		var char core.Character
-		rows.Scan(&char.Name, &char.Rarity, &char.IsPickup)
+		rows.Scan(&char.ID, &char.Name, &char.Rarity)
 		chars = append(chars, char)
 	}
 
@@ -44,40 +44,59 @@ func getCharacters(db *sql.DB) []core.Character {
 }
 
 // 新しいキャラクターをDBに挿入する関数
-func insertCharacter(db *sql.DB, Character core.Character) error {
-	_, err := db.Exec("INSERT INTO characters (name, rarity, is_pickup) VALUES ($1, $2, $3)",
-		Character.Name, Character.Rarity, Character.IsPickup)
-	return err
+func insertCharacter(db *sql.DB, character core.Character) error {
+	// キャラクターを追加してIDを取得
+	var newID int
+	err := db.QueryRow("INSERT INTO characters (name, rarity) VALUES ($1, $2) RETURNING id",
+		character.Name, character.Rarity).Scan(&newID)
+	if err != nil {
+		return err
+	}
+
+	// IDを登録
+	character.ID = newID
+	return nil
 }
 
 // 指定したキャラクターをピックアップに設定する関数
-func changePickupCharacter(db *sql.DB, rarity string, targetNames []string) error {
+func changePickupCharacter(db *sql.DB, bannerTitle string, pickupCharacters core.PickupCharacters) error {
 	// トランザクション開始
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 
-	// 指定のレアリティのキャラクターの is_pickup を一旦 false (非ピックアップ) にリセットする
-	_, err = tx.Exec("UPDATE characters SET is_pickup = false WHERE rarity = $1", rarity)
+	// 指定のガチャからピックアップをすべて解除する (gacha_bannersテーブルのtitleからガチャのidを探して指定)
+	_, err = tx.Exec(`
+		DELETE FROM banner_pickups 
+		WHERE banner_id = (SELECT id FROM gacha_banners WHERE title = $1)
+	`, bannerTitle)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	// 指定されたキャラクターの is_pickup だけを true にする
-	for _, targetName := range targetNames {
-		res, err := tx.Exec("UPDATE characters SET is_pickup = true WHERE name = $1", targetName)
+	// 選ばれたキャラクターたちをピックアップにする
+	for _, character := range pickupCharacters.Star5 {
+		// charactersテーブルから名前でIDを検索し、banner_id=1と一緒に登録する
+		_, err = tx.Exec(`
+			INSERT INTO banner_pickups (banner_id, character_id)
+			SELECT (SELECT id FROM gacha_banners WHERE title = $1), (id FROM characters WHERE name = $2)
+		`, bannerTitle, character.Name)
 		if err != nil {
 			tx.Rollback()
-			return err
+			return fmt.Errorf("ピックアップの登録に失敗しました")
 		}
-
-		// もし指定した名前のキャラが存在しなかった場合
-		rowsAffected, _ := res.RowsAffected()
-		if rowsAffected == 0 {
+	}
+	for _, character := range pickupCharacters.Star4 {
+		// charactersテーブルから名前でIDを検索し、banner_id=1と一緒に登録する
+		_, err = tx.Exec(`
+			INSERT INTO banner_pickups (banner_id, character_id)
+			SELECT (SELECT id FROM gacha_banners WHERE title = $1), (id FROM characters WHERE name = $2)
+		`, bannerTitle, character.Name)
+		if err != nil {
 			tx.Rollback()
-			return fmt.Errorf("指定されたキャラクター名[%s]は存在しません", targetName)
+			return fmt.Errorf("ピックアップの登録に失敗しました")
 		}
 	}
 

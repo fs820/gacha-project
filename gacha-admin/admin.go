@@ -6,9 +6,26 @@ import (
 	"fmt"
 	core "gacha-core"
 	"net/http" // HTTPサーバーの構築に使用
-	"strconv"
-	"strings"
 )
+
+// キャラクター追加のリクエスト型
+type InsertCharacterRequest struct {
+	Rarity string `json:"rarity"`
+	Name   string `json:"name"`
+}
+
+// 石の付与のリクエスト型
+type AddStoneRequest struct {
+	UID    string `json:"uid"`
+	Amount int    `json:"amount"`
+}
+
+// ピックアップ変更のリクエスト型
+type UpdatePickupRequest struct {
+	bannerTitle string   `json:"banner_title"`
+	Star5Names  []string `json:"star5_names"`
+	Star4Names  []string `json:"star4_names"`
+}
 
 // 管理者専用：すべての履歴を削除するエンドポイント
 func (app *AdminApp) adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,23 +55,15 @@ func (app *AdminApp) adminAddStonesHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// クエリパラメータの取得
-	targetUID := r.URL.Query().Get("uid")
-	amountStr := r.URL.Query().Get("amount")
-	if targetUID == "" || amountStr == "" {
-		http.Error(w, "uidとamountを指定してください。 例: ?pass=supersecret&uid=xxx&amount=1000", http.StatusBadRequest)
-		return
-	}
-
-	// 文字列のamountを整数(int)に変換
-	amount, err := strconv.Atoi(amountStr)
-	if err != nil {
-		http.Error(w, "amountは数字で指定してください", http.StatusBadRequest)
+	// リクエストの読み込み
+	var req AddStoneRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
 		return
 	}
 
 	// 石を追加
-	err = addStones(app.db, targetUID, amount)
+	err := addStones(app.db, req.UID, req.Amount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -62,7 +71,7 @@ func (app *AdminApp) adminAddStonesHandler(w http.ResponseWriter, r *http.Reques
 
 	// 成功メッセージ (fmt.Sprintf を使って文字列の中に変数を埋め込む)
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte(fmt.Sprintf("ユーザー[%s]に石を%d個追加しました！", targetUID, amount)))
+	w.Write([]byte(fmt.Sprintf("ユーザー[%s]に石を%d個追加しました！", req.UID, req.Amount)))
 }
 
 // 管理者専用：キャラクター情報を追加するエンドポイント
@@ -73,28 +82,21 @@ func (app *AdminApp) adminInsertCharacterHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// URLから変更したいキャラクターの名前を取得（例: ?name=アテナ）
-	targetNamesStr := r.URL.Query().Get("name")
-	if targetNamesStr == "" {
-		http.Error(w, "nameを指定してください。 例: ?rarity=星5&name=アテナ", http.StatusBadRequest)
+	// リクエストの読み込み
+	var req InsertCharacterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
 		return
 	}
 
-	// URLから変更したいレアリティを取得（例: ?rarity=星5）
-	rarity := r.URL.Query().Get("rarity")
-	if rarity == "" {
-		http.Error(w, "rarityを指定してください。 例: ?rarity=星5&name=アテナ", http.StatusBadRequest)
-		return
-	}
-
-	// 新しいキャラクター情報を作成
-	newCharacter := core.Character{
-		Name:   targetNamesStr,
-		Rarity: rarity,
+	// キャラクターを作る
+	char := core.Character{
+		Rarity: req.Rarity,
+		Name:   req.Name,
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターを挿入
-	err := insertCharacter(app.db, newCharacter)
+	err := insertCharacter(app.db, char)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -112,37 +114,44 @@ func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// URLから変更したいレアリティを取得（例: ?rarity=星5）
-	rarity := r.URL.Query().Get("rarity")
-	if rarity == "" {
-		http.Error(w, "rarityを指定してください。 例: ?rarity=星5&name=アテナ", http.StatusBadRequest)
+	// リクエストの読み込み
+	var req UpdatePickupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
 		return
 	}
 
-	// URLから変更したいキャラクターの名前を取得（例: ?name=アテナ）
-	targetNamesStr := r.URL.Query().Get("name")
-	if targetNamesStr == "" {
-		http.Error(w, "nameを指定してください。 例: ?rarity=星5&name=アテナ", http.StatusBadRequest)
-		return
-	}
-	targetNames := strings.Split(targetNamesStr, ",")
-	for i := range targetNames {
-		if targetNames[i] == "" {
-			http.Error(w, "nameを指定してください。 例: ?rarity=星5&name=アテナ", http.StatusBadRequest)
-			return
+	// ピックアップキャラクターリストを作る
+	var pickupCharacters core.PickupCharacters
+	for _, name := range req.Star5Names {
+		char := core.Character{
+			Rarity: "星5",
+			Name:   name,
 		}
+		pickupCharacters.Star5 = append(pickupCharacters.Star5, char)
+	}
+	for _, name := range req.Star4Names {
+		char := core.Character{
+			Rarity: "星4",
+			Name:   name,
+		}
+		pickupCharacters.Star4 = append(pickupCharacters.Star4, char)
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターをピックアップに設定
-	err := changePickupCharacter(app.db, rarity, targetNames)
+	err := changePickupCharacter(app.db, req.bannerTitle, pickupCharacters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// メッセージ
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	for _, name := range targetNames {
-		w.Write([]byte(fmt.Sprintf("%sピックアップキャラクターを [%s] に更新しました！\n", rarity, name)))
+	for _, name := range req.Star5Names {
+		w.Write([]byte(fmt.Sprintf("星5ピックアップキャラクターを [%s] に更新しました！\n", name)))
+	}
+	for _, name := range req.Star4Names {
+		w.Write([]byte(fmt.Sprintf("星4ピックアップキャラクターを [%s] に更新しました！\n", name)))
 	}
 }
 

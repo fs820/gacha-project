@@ -88,30 +88,101 @@ func saveGachaResultTx(db *sql.DB, uid string, user *core.UserData, results []co
 	return tx.Commit()
 }
 
-// DBから指定したレアリティとピックアップ条件に合うキャラクターの配列を取得する関数
-func getCharacters(db *sql.DB, rarity string, isPickup bool) []core.Character {
-	var chars []core.Character
+// 指定したタイトルのガチャバナー(情報)を取得する関数
+func getGachaBanner(db *sql.DB, bannerTitle string) core.GachaBanner {
+	var gachaBanner core.GachaBanner
+
+	// タイトルを登録
+	gachaBanner.Title = bannerTitle
 
 	// DBから検索
-	rows, err := db.Query("SELECT name FROM characters WHERE rarity = $1 AND is_pickup = $2", rarity, isPickup)
+	err := db.QueryRow(`
+	    SELECT id cost prob_star5 prob_star4 star5_limit star4_limit star5_pickup_prob pity_soft_start soft_pity_increment
+	    FROM gacha_banners WHERE title = $1
+	    `, bannerTitle).Scan(&gachaBanner.ID, &gachaBanner.Cost, &gachaBanner.ProbBaseStar5, &gachaBanner.ProbBaseStar4, &gachaBanner.Star5Limit, &gachaBanner.Star4Limit, &gachaBanner.Star5PickupProb, &gachaBanner.PitySoftStart, &gachaBanner.SoftPityIncrement)
+	if err != nil {
+		log.Println("バナー取得エラー:", err)
+		return gachaBanner
+	}
+
+	return gachaBanner
+}
+
+// DBから指定したバナーのピックアップキャラクターを取得する関数
+func getPickupCharacters(db *sql.DB, bannerTitle string) core.PickupCharacters {
+	var pickupCharacters core.PickupCharacters
+
+	// DBから検索
+	rows, err := db.Query(
+		`SELECT id name rarity FROM characters WHERE id = 
+	    (SELECT character_id FROM banner_pickups WHERE banner_id = 
+	    (SELECT id FROM gacha_banners WHERE title = $1))
+		`, bannerTitle)
 	if err != nil {
 		log.Println("キャラクター取得エラー:", err)
-		return chars
+		return pickupCharacters
 	}
 	defer rows.Close()
 
+	// ピックアップCharacterを格納する
 	for rows.Next() {
-		var name string
-		rows.Scan(&name)
-		char := core.Character{
-			Name:     name,
-			Rarity:   rarity,
-			IsPickup: isPickup,
+		var char core.Character
+		rows.Scan(&char.ID, &char.Name, &char.Rarity)
+		if char.Rarity == "星5" {
+			pickupCharacters.Star5 = append(pickupCharacters.Star5, char)
+		} else if char.Rarity == "星4" {
+			pickupCharacters.Star4 = append(pickupCharacters.Star4, char)
 		}
-		chars = append(chars, char)
 	}
 
-	return chars
+	return pickupCharacters
+}
+
+// DBから恒常キャラクターの配列を取得する関数
+func getConstantCharacters(db *sql.DB) []core.Character {
+	var constantCharacters []core.Character
+
+	// DBから検索
+	rows, err := db.Query(
+		`SELECT id name rarity FROM characters WHERE id = 
+	    (SELECT character_id FROM constant_characters)`)
+	if err != nil {
+		log.Println("キャラクター取得エラー:", err)
+		return constantCharacters
+	}
+	defer rows.Close()
+
+	// 恒常キャラを格納する
+	for rows.Next() {
+		var char core.Character
+		rows.Scan(&char.ID, &char.Name, &char.Rarity)
+		constantCharacters = append(constantCharacters, char)
+	}
+
+	return constantCharacters
+}
+
+// DBから恒常キャラクターの配列を取得する関数
+func getStar3Characters(db *sql.DB) []core.Character {
+	var star3Characters []core.Character
+
+	// DBから検索
+	rows, err := db.Query(`SELECT id name FROM characters WHERE rarity = "星3"`)
+	if err != nil {
+		log.Println("キャラクター取得エラー:", err)
+		return star3Characters
+	}
+	defer rows.Close()
+
+	// 恒常キャラを格納する
+	for rows.Next() {
+		var char core.Character
+		rows.Scan(&char.ID, &char.Name)
+		char.Rarity = "星3"
+		star3Characters = append(star3Characters, char)
+	}
+
+	return star3Characters
 }
 
 // ユーザーの石を購入するリクエストをDBに登録する関数
