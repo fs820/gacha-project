@@ -128,9 +128,10 @@ func getPickupCharacters(db *sql.DB, bannerTitle string) core.PickupCharacters {
 	for rows.Next() {
 		var char core.Character
 		rows.Scan(&char.ID, &char.Name, &char.Rarity)
-		if char.Rarity == "星5" {
+		switch char.Rarity {
+		case "星5":
 			pickupCharacters.Star5 = append(pickupCharacters.Star5, char)
-		} else if char.Rarity == "星4" {
+		case "星4":
 			pickupCharacters.Star4 = append(pickupCharacters.Star4, char)
 		}
 	}

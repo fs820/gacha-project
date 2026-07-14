@@ -202,7 +202,7 @@ func gachaJudgment(db *sql.DB, user *core.UserData, bannerTitle string) core.Gac
 		user.Star5LimitCounter = 0 // カウンターをリセット
 
 		// ピックアップキャラクターの当選判定を行う関数を呼び出す
-		return pickupJudgment(db, user, gachaBanner.Star5PickupProb, pickupCharacters.Star5, getConstantCharacters(db))
+		return pickupJudgment(user, gachaBanner.Star5PickupProb, pickupCharacters.Star5, getConstantCharacters(db))
 	} else if roll < (star5Prob+gachaBanner.ProbBaseStar4) || user.Star4LimitCounter >= gachaBanner.Star4Limit {
 		// 5.1%の確率で星4 （もしくは、天井カウンターが10連目の場合は強制的に星4）
 		user.Star4LimitCounter = 0 // カウンターをリセット
@@ -218,7 +218,7 @@ func gachaJudgment(db *sql.DB, user *core.UserData, bannerTitle string) core.Gac
 }
 
 // ピックアップキャラクターの当選判定を行う関数
-func pickupJudgment(db *sql.DB, user *core.UserData, pickupProb int, pickupCharacters []core.Character, constantCharacters []core.Character) core.GachaResult {
+func pickupJudgment(user *core.UserData, pickupProb int, pickupCharacters []core.Character, constantCharacters []core.Character) core.GachaResult {
 	// ピックアップキャラクターが確定している場合は、ピックアップキャラクターを返す
 	if user.IsNextPickupGuaranteed {
 		user.IsNextPickupGuaranteed = false // フラグをリセット

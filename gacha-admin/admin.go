@@ -22,7 +22,7 @@ type AddStoneRequest struct {
 
 // ピックアップ変更のリクエスト型
 type UpdatePickupRequest struct {
-	bannerTitle string   `json:"banner_title"`
+	BannerTitle string   `json:"banner_title"`
 	Star5Names  []string `json:"star5_names"`
 	Star4Names  []string `json:"star4_names"`
 }
@@ -139,7 +139,7 @@ func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターをピックアップに設定
-	err := changePickupCharacter(app.db, req.bannerTitle, pickupCharacters)
+	err := changePickupCharacter(app.db, req.BannerTitle, pickupCharacters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

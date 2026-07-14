@@ -53,8 +53,6 @@ func insertCharacter(db *sql.DB, character core.Character) error {
 		return err
 	}
 
-	// IDを登録
-	character.ID = newID
 	return nil
 }
 
