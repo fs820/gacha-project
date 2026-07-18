@@ -8,10 +8,29 @@ import (
 	"net/http" // HTTPサーバーの構築に使用
 )
 
+// 基本レスポンス
+type ApiResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 // キャラクター追加のリクエスト型
 type InsertCharacterRequest struct {
 	Rarity string `json:"rarity"`
 	Name   string `json:"name"`
+}
+
+// ガチャの基本データ
+type InsertBannerRequest struct {
+	Title             string `json:"title"`
+	Cost              int    `json:"cost"`
+	ProbBaseStar5     int    `json:"probBaseStar5"`
+	ProbBaseStar4     int    `json:"probBaseStar4"`
+	Star5Limit        int    `json:"star5Limit"`
+	Star4Limit        int    `json:"star4Limit"`
+	Star5PickupProb   int    `json:"star5PickupProb"`
+	PitySoftStart     int    `json:"pitySoftStart"`
+	SoftPityIncrement int    `json:"softPityIncrement"`
 }
 
 // 石の付与のリクエスト型
@@ -25,6 +44,17 @@ type UpdatePickupRequest struct {
 	BannerTitle string   `json:"banner_title"`
 	Star5Names  []string `json:"star5_names"`
 	Star4Names  []string `json:"star4_names"`
+}
+
+// 成功メッセージ
+func sendSuccessResponse(w http.ResponseWriter, message string) {
+	// JSON形式でレスポンスを返す
+	w.Header().Set("Content-Type", "application/json")
+	apiResponse := ApiResponse{
+		Success: true,
+		Message: message,
+	}
+	json.NewEncoder(w).Encode(apiResponse)
 }
 
 // 管理者専用：すべての履歴を削除するエンドポイント
@@ -42,9 +72,8 @@ func (app *AdminApp) adminDeleteHistoryHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// 成功メッセージ
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte("すべてのガチャ履歴を正常に削除しました！"))
+	// JSON形式でレスポンスを返す
+	sendSuccessResponse(w, "すべてのガチャ履歴を正常に削除しました！")
 }
 
 // 管理者専用：指定したユーザーに石を付与するエンドポイント
@@ -69,9 +98,8 @@ func (app *AdminApp) adminAddStonesHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 成功メッセージ (fmt.Sprintf を使って文字列の中に変数を埋め込む)
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte(fmt.Sprintf("ユーザー[%s]に石を%d個追加しました！", req.UID, req.Amount)))
+	// JSON形式でレスポンスを返す
+	sendSuccessResponse(w, fmt.Sprintf("ユーザー[%s]に石を%d個追加しました！", req.UID, req.Amount))
 }
 
 // 管理者専用：キャラクター情報を追加するエンドポイント
@@ -102,8 +130,47 @@ func (app *AdminApp) adminInsertCharacterHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte("キャラクターが正常に追加されました！"))
+	// JSON形式でレスポンスを返す
+	sendSuccessResponse(w, "キャラクターが正常に追加されました！")
+}
+
+// 管理者専用：バナー情報を追加するエンドポイント
+func (app *AdminApp) adminInsertBannerHandler(w http.ResponseWriter, r *http.Request) {
+	// POSTリクエストのみ
+	if r.Method != http.MethodPost {
+		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// リクエストの読み込み
+	var req InsertBannerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
+		return
+	}
+
+	// バナーを作る
+	banner := core.GachaBanner{
+		Title:             req.Title,
+		Cost:              req.Cost,
+		ProbBaseStar5:     req.ProbBaseStar5,
+		ProbBaseStar4:     req.ProbBaseStar4,
+		Star5Limit:        req.Star5Limit,
+		Star4Limit:        req.Star4Limit,
+		Star5PickupProb:   req.Star5PickupProb,
+		PitySoftStart:     req.PitySoftStart,
+		SoftPityIncrement: req.SoftPityIncrement,
+	}
+
+	// データベースの関数を呼び出して、指定したキャラクターを挿入
+	err := insertBanner(app.db, banner)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// JSON形式でレスポンスを返す
+	sendSuccessResponse(w, "バナーが正常に追加されました！")
 }
 
 // 管理者専用：ピックアップキャラクターを変更するエンドポイント
@@ -145,14 +212,39 @@ func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// メッセージ
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// JSON形式でレスポンスを返す
 	for _, name := range req.Star5Names {
-		w.Write([]byte(fmt.Sprintf("星5ピックアップキャラクターを [%s] に更新しました！\n", name)))
+		sendSuccessResponse(w, fmt.Sprintf("星5ピックアップキャラクターを [%s] に更新しました！\n", name))
 	}
 	for _, name := range req.Star4Names {
-		w.Write([]byte(fmt.Sprintf("星4ピックアップキャラクターを [%s] に更新しました！\n", name)))
+		sendSuccessResponse(w, fmt.Sprintf("星4ピックアップキャラクターを [%s] に更新しました！\n", name))
 	}
+}
+
+// 管理者専用：バナー情報を変更するエンドポイント
+func (app *AdminApp) adminChangeBannerHandler(w http.ResponseWriter, r *http.Request) {
+	// POSTリクエストのみ
+	if r.Method != http.MethodPost {
+		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// リクエストの読み込み
+	var req core.GachaBanner
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
+		return
+	}
+
+	// データベースの関数を呼び出して、指定したキャラクターを挿入
+	err := changeBannersInfo(app.db, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// JSON形式でレスポンスを返す
+	sendSuccessResponse(w, "バナーが正常に変更されました！")
 }
 
 // 管理者専用：キャラクター情報を取得するエンドポイント
@@ -169,4 +261,43 @@ func (app *AdminApp) adminGetCharacterHandler(w http.ResponseWriter, r *http.Req
 	// JSON形式でレスポンスを返す
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(characters)
+}
+
+// 管理者専用：バナー情報を取得するエンドポイント
+func (app *AdminApp) adminGetBannerHandler(w http.ResponseWriter, r *http.Request) {
+	// POSTリクエストのみ
+	if r.Method != http.MethodPost {
+		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// データベースの関数を呼び出して、指定したキャラクターの情報を取得
+	banners := getBanners(app.db)
+
+	// JSON形式でレスポンスを返す
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(banners)
+}
+
+// 管理者専用：ピックアップID情報を取得するエンドポイント
+func (app *AdminApp) adminGetPickupIDHandler(w http.ResponseWriter, r *http.Request) {
+	// POSTリクエストのみ
+	if r.Method != http.MethodPost {
+		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// リクエストの読み込み
+	var bannerTitle string
+	if err := json.NewDecoder(r.Body).Decode(&bannerTitle); err != nil {
+		http.Error(w, "不正なデータ形式です", http.StatusBadRequest)
+		return
+	}
+
+	// データベースの関数を呼び出して、指定したキャラクターの情報を取得
+	ids := getPickupCharactersID(app.db, bannerTitle)
+
+	// JSON形式でレスポンスを返す
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ids)
 }

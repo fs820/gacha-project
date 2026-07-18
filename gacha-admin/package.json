@@ -1,0 +1,16 @@
+{
+  "name": "gacha-admin",
+  "version": "1.0.0",
+  "description": "[https://github.com/fs820/go-gacha-api]\r このコードは上記作品の一部です\r 説明はそちらにあります",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

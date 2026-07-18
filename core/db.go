@@ -119,7 +119,7 @@ func InitSchema(db *sql.DB) error {
 	// 恒常テーブル（中間テーブル）
 	constantTable := `
 	CREATE TABLE IF NOT EXISTS constant_characters (
-		PRIMARY character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE
+		character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE PRIMARY KEY
 	);`
 	if _, err := db.Exec(constantTable); err != nil {
 		return err

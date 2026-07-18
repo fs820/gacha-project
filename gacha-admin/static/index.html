@@ -9,28 +9,55 @@
     <h1>管理画面</h1>
     
     <div class="tabs">
-        <button onclick="showPage('pickup')">ピックアップ変更</button>
+        <button onclick="showPage('banner')">バナー追加</button>
+        <button onclick="showPage('change_banner')">バナー編集</button>
         <button onclick="showPage('character')">キャラクター追加</button>
+        <button onclick="showPage('pickup')">ピックアップ変更</button>
         <button onclick="showPage('stone')">石の付与</button>
         <button onclick="showPage('history')">ガチャ履歴削除</button>
     </div>
 
-    <div id="pickup" class="page">
-        <h3>ピックアップ変更</h3>
-        <div id="checkboxContainer_star5"></div>
-        <div id="checkboxContainer_star4"></div>
-        <button id="submitButton">決定</button>
+    <div id="banner" class="page">
+        <h3>バナー追加</h3>
+        <input type="text" id="charName" placeholder="キャラクター名">
+        <select id="charRarity">
+            <option value="星3">星3</option>
+            <option value="星4">星4</option>
+            <option value="星5">星5</option>
+        </select>
+        <br><br>
+        <button onclick="insertBanner()">追加</button>
+    </div>
+
+    <div id="change_banner" class="page" style="display:none;">
+        <h3>バナー編集</h3>
+        <input type="text" id="charName" placeholder="キャラクター名">
+        <select id="charRarity">
+            <option value="星3">星3</option>
+            <option value="星4">星4</option>
+            <option value="星5">星5</option>
+        </select>
+        <br><br>
+        <button onclick="changeBanner()">追加</button>
     </div>
 
     <div id="character" class="page" style="display:none;">
         <h3>キャラクター追加</h3>
         <input type="text" id="charName" placeholder="キャラクター名">
         <select id="charRarity">
+            <option value="星3">星3</option>
             <option value="星4">星4</option>
             <option value="星5">星5</option>
         </select>
         <br><br>
         <button onclick="insertCharacter()">追加</button>
+    </div>
+
+    <div id="pickup" class="page" style="display:none;">
+        <h3>ピックアップ変更</h3>
+        <div id="checkboxContainer_star5"></div>
+        <div id="checkboxContainer_star4"></div>
+        <button id="submitButton">決定</button>
     </div>
 
     <div id="stone" class="page" style="display:none;">
@@ -46,6 +73,6 @@
         <button onclick="deleteHistory()">削除</button>
     </div>
 
-    <script src="script.js?v=20260711"></script>
+    <script type="module" src="dist/script.js?v=20260716"></script>
 </body>
 </html>
