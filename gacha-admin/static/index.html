@@ -26,7 +26,7 @@
             <option value="星5">星5</option>
         </select>
         <br><br>
-        <button onclick="insertBanner()">追加</button>
+        <button id="insertBannerSubmitButton">追加</button>
     </div>
 
     <div id="change_banner" class="page" style="display:none;">
@@ -38,7 +38,7 @@
             <option value="星5">星5</option>
         </select>
         <br><br>
-        <button onclick="changeBanner()">追加</button>
+        <button id="changeBannerSubmitButton">追加</button>
     </div>
 
     <div id="character" class="page" style="display:none;">
@@ -50,14 +50,14 @@
             <option value="星5">星5</option>
         </select>
         <br><br>
-        <button onclick="insertCharacter()">追加</button>
+        <button id="insertCharacterSubmitButton">追加</button>
     </div>
 
     <div id="pickup" class="page" style="display:none;">
         <h3>ピックアップ変更</h3>
         <div id="checkboxContainer_star5"></div>
         <div id="checkboxContainer_star4"></div>
-        <button id="submitButton">決定</button>
+        <button id="pickupSubmitButton">決定</button>
     </div>
 
     <div id="stone" class="page" style="display:none;">
@@ -65,12 +65,12 @@
         <input type="text" id="uid" placeholder="ユーザーID">
         <input type="number" id="amount" placeholder="付与する石の数">
         <br><br>
-        <button onclick="addStone()">付与</button>
+        <button id="addStoneSubmitButton">付与</button>
     </div>
 
     <div id="history" class="page" style="display:none;">
         <h3>ガチャ履歴の削除</h3>
-        <button onclick="deleteHistory()">削除</button>
+        <button id="deleteHistorySubmitButton">削除</button>
     </div>
 
     <script type="module" src="dist/script.js?v=20260716"></script>

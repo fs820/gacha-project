@@ -8,37 +8,33 @@ window.onload = async () => {
         createBannerInput(),
     ]);
 
+    // バナーの追加ボタン
+    addButtonFunc("insertBannerSubmitButton", insertBanner);
+
+    // バナーの変更ボタンがクリックされたときの処理
+    addButtonFunc("changeBannerSubmitButton", changeBanner);
+
+    // キャラクター追加ボタンがクリックされたときの処理
+    addButtonFunc("insertCharacterSubmitButton", insertCharacter);
+
     // ピックアップの決定ボタンがクリックされたときの処理
-    const submitButton = document.getElementById("submitButton") as HTMLButtonElement;
-    if (!(submitButton instanceof HTMLButtonElement))
+    addButtonFunc("pickupSubmitButton", changePickUpClick);
+
+    // 石の付与ボタンがクリックされたときの処理
+    addButtonFunc("addStoneSubmitButton", addStone);
+
+    // 履歴の削除ボタンがクリックされたときの処理
+    addButtonFunc("deleteHistorySubmitButton", deleteHistory);
+}
+
+// ボタンに関数を登録する
+function addButtonFunc(buttonName:string, func: EventListenerOrEventListenerObject) {
+    const button = document.getElementById(buttonName) as HTMLButtonElement;
+    if (!(button instanceof HTMLButtonElement))
     {
-        throw new Error("[Error] HTMLに[submitButton]タグがありません");
+        throw new Error(`[Error] HTMLに[${buttonName}]タグがありません`);
     }
-    submitButton.addEventListener("click", () => {
-        // バナータイトルを取得する
-        const bannerTitle = getInput("bannerTitle");
-
-        // チェックされている星5のキャラクターを取得
-        const selectedStar5: string[] = [];
-        document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star5 input[type='checkbox']")
-            .forEach(cb => {
-                if (cb.checked) {
-                    selectedStar5.push(cb.value);
-                }
-            });
-
-        // チェックされている星4のキャラクターを取得
-        const selectedStar4: string[] = [];
-        document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star4 input[type='checkbox']")
-            .forEach(cb => {
-                if (cb.checked) {
-                    selectedStar4.push(cb.value);
-                }
-            });
-
-        // ピックアップを変更する
-        changePickUp(bannerTitle.value,selectedStar5,selectedStar4);
-    });
+    button.addEventListener("click", func);
 }
 
 // サーバーと通信する関数
@@ -215,6 +211,33 @@ async function changeBanner() {
 }
 
 // ピックアップ変更
+async function changePickUpClick() {
+    // バナータイトルを取得する
+    const bannerTitle = getInput("bannerTitle");
+
+    // チェックされている星5のキャラクターを取得
+    const selectedStar5: string[] = [];
+    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star5 input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selectedStar5.push(cb.value);
+            }
+        });
+
+    // チェックされている星4のキャラクターを取得
+    const selectedStar4: string[] = [];
+    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star4 input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selectedStar4.push(cb.value);
+            }
+        });
+
+    // ピックアップを変更する
+    changePickUp(bannerTitle.value, selectedStar5, selectedStar4);
+}
+
+// ピックアップ変更
 async function changePickUp(bannerTitle: string, star5Names: string[], star4Names: string[]) {
     // 渡すデータ
     const requestData: UpdatePickupRequest = {
@@ -349,9 +372,9 @@ async function createCheckboxes(bannerTitle: string) {
 // バナー更新欄を生成する関数
 async function createBannerInput() {
     // HTMLから入力を取得する
-    const container_gachaBanner = document.getElementById("container_gachaBanner");
+    const container_gachaBanner = document.getElementById("banner");
     if (!container_gachaBanner) {
-        throw new Error("[Error] HTMLにcontainer_gachaBannerがありません");
+        throw new Error("[Error] HTMLにbannerがありません");
     }
 
     try {
