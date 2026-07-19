@@ -60,15 +60,16 @@ func main() {
 	http.Handle("/", basicAuth(fs))
 
 	// 管理者用エンドポイント (Basic認証)
-	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(app.adminDeleteHistoryHandler)))     // 履歴の削除
-	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(app.adminAddStonesHandler)))             // 石の付与
-	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(app.adminInsertCharacterHandler))) // キャラクター追加
-	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(app.adminUpdatePickupHandler)))       // ピックアップ変更
-	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(app.adminGetCharacterHandler)))       // キャラクター取得
-	http.Handle("/admin/get_pickup_id", basicAuth(http.HandlerFunc(app.adminGetPickupIDHandler)))        // ピックアップID取得
+	http.Handle("/admin/get_banner", basicAuth(http.HandlerFunc(app.adminGetBannerHandler)))             // バナー取得
 	http.Handle("/admin/insert_banner", basicAuth(http.HandlerFunc(app.adminInsertBannerHandler)))       // バナー追加
 	http.Handle("/admin/change_banner", basicAuth(http.HandlerFunc(app.adminChangeBannerHandler)))       // バナー変更
-	http.Handle("/admin/get_banner", basicAuth(http.HandlerFunc(app.adminGetBannerHandler)))             // バナー取得
+	http.Handle("/admin/get_character", basicAuth(http.HandlerFunc(app.adminGetCharacterHandler)))       // キャラクター取得
+	http.Handle("/admin/insert_character", basicAuth(http.HandlerFunc(app.adminInsertCharacterHandler))) // キャラクター追加
+	http.Handle("/admin/update_constant", basicAuth(http.HandlerFunc(app.adminUpdateConstantHandler)))   // 恒常変更
+	http.Handle("/admin/get_pickup_id", basicAuth(http.HandlerFunc(app.adminGetPickupIDHandler)))        // ピックアップID取得
+	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(app.adminUpdatePickupHandler)))       // ピックアップ変更
+	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(app.adminAddStonesHandler)))             // 石の付与
+	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(app.adminDeleteHistoryHandler)))     // 履歴の削除
 
 	// サーバー起動のメッセージを表示
 	fmt.Println("サーバーを起動しました！ ブラウザで http://localhost:8081 にアクセスしてください。")

@@ -12,6 +12,7 @@
         <button onclick="showPage('banner')">バナー追加</button>
         <button onclick="showPage('change_banner')">バナー編集</button>
         <button onclick="showPage('character')">キャラクター追加</button>
+        <button onclick="showPage('constant')">恒常変更</button>
         <button onclick="showPage('pickup')">ピックアップ変更</button>
         <button onclick="showPage('stone')">石の付与</button>
         <button onclick="showPage('history')">ガチャ履歴削除</button>
@@ -51,6 +52,12 @@
         </select>
         <br><br>
         <button id="insertCharacterSubmitButton">追加</button>
+    </div>
+
+    <div id="constant" class="page" style="display:none;">
+        <h3>恒常変更</h3>
+        <div id="checkboxContainer_constant"></div>
+        <button id="constantSubmitButton">決定</button>
     </div>
 
     <div id="pickup" class="page" style="display:none;">

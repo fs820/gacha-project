@@ -1,8 +1,7 @@
-// Character構造体
-export interface Character {
-    id:     number,
-    name:   string,
-    rarity: string
+// 基本レスポンス
+export interface ApiResponse {
+    success: boolean;
+    message: string;
 }
 
 // ガチャバナー構造体
@@ -19,14 +18,9 @@ export interface GachaBanner {
 	softPityIncrement: number,
 }
 
-// 基本レスポンス
-export interface ApiResponse {
-    success: boolean;
-    message: string;
-}
-
-// Character追加リクエスト
-export interface InsertCharacterRequest {
+// Character構造体
+export interface Character {
+    id:     number,
     name:   string,
     rarity: string
 }
@@ -44,11 +38,22 @@ export interface InsertBannerRequest {
 	softPityIncrement: number
 }
 
+// Character追加リクエスト
+export interface InsertCharacterRequest {
+    name:   string,
+    rarity: string
+}
+
+// 恒常変更のリクエスト型
+export interface UpdateConstantRequest {
+	charID: number[]
+}
+
 // ピックアップ変更のリクエスト型
 export interface UpdatePickupRequest {
-	bannerTitle: string,
-	star5Names:  string[],
-	star4Names:  string[]
+	bannerID: number,
+	star5ID:  number[],
+	star4ID:  number[]
 }
 
 // 石の付与のリクエスト型

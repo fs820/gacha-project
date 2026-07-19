@@ -1,5 +1,5 @@
 // インターフェースのインポート
-import { ApiResponse, GachaBanner, Character, InsertCharacterRequest, InsertBannerRequest, UpdatePickupRequest, AddStoneRequest } from "./types.js";
+import { ApiResponse, GachaBanner, Character, InsertBannerRequest, InsertCharacterRequest, UpdateConstantRequest, UpdatePickupRequest, AddStoneRequest } from "./types.js";
 
 // 最初にチェックボックスを生成
 window.onload = async () => {
@@ -17,6 +17,9 @@ window.onload = async () => {
     // キャラクター追加ボタンがクリックされたときの処理
     addButtonFunc("insertCharacterSubmitButton", insertCharacter);
 
+    // 恒常の決定ボタンがクリックされたときの処理
+    addButtonFunc("constantSubmitButton", changeConstant);
+
     // ピックアップの決定ボタンがクリックされたときの処理
     addButtonFunc("pickupSubmitButton", changePickUpClick);
 
@@ -27,36 +30,53 @@ window.onload = async () => {
     addButtonFunc("deleteHistorySubmitButton", deleteHistory);
 }
 
-// ボタンに関数を登録する
-function addButtonFunc(buttonName:string, func: EventListenerOrEventListenerObject) {
-    const button = document.getElementById(buttonName) as HTMLButtonElement;
-    if (!(button instanceof HTMLButtonElement))
-    {
-        throw new Error(`[Error] HTMLに[${buttonName}]タグがありません`);
+// バナー更新欄を生成する関数
+async function createBannerInput() {
+    // HTMLから入力を取得する
+    const container_gachaBanner = document.getElementById("banner");
+    if (!container_gachaBanner) {
+        throw new Error("[Error] HTMLにbannerがありません");
     }
-    button.addEventListener("click", func);
+
+    try {
+        const banners: GachaBanner[] =
+        await postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined);
+        banners.forEach(banner => {
+            container_gachaBanner.appendChild(createBannerEditor(banner));
+        });
+    } catch (error) {
+        handleError(error);
+    }
 }
 
-// サーバーと通信する関数
-async function postJson<TRequest, TResponse>(
-    url: string,
-    method: string,
-    request: TRequest
-): Promise<TResponse> {
-
-    const response = await fetch(url, {
-        method: method,
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(request)
-    });
-
-    if (!response.ok) {
-        throw new Error(await response.text());
+// チェックボックスを生成する関数
+async function createCheckboxes(bannerTitle: string) {
+    // HTMLから入力を取得する
+    const container_star5 = document.getElementById("checkboxContainer_star5");
+    const container_star4 = document.getElementById("checkboxContainer_star4");
+    if (!(container_star5) || !(container_star4)) {
+        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4]タグがありません");
     }
 
-    return await response.json() as TResponse;
+    var characters: Character[];
+    try {
+        characters = await postJson<undefined, Character[]>(`/admin/get_character`, "POST", undefined);
+    } catch (error) {
+        handleError(error);
+        return;
+    }
+
+    var pickupIDs: number[];
+    try {
+        pickupIDs = await postJson<string, number[]>(`/admin/get_pickup_id`, "POST", bannerTitle);
+    } catch (error) {
+        console.error(error);
+        alert("通信エラーが発生しました");
+    }
+
+    characters.forEach(char => {
+        createCharacterEditor(char, pickupIDs, container_star5, container_star4);
+    });
 }
 
 // バナーの追加
@@ -109,40 +129,6 @@ async function insertBanner() {
     try {
         const apiResponse: ApiResponse =
         await postJson<InsertBannerRequest, ApiResponse>(`/admin/insert_banner`, "POST", requestData);
-        showResponse(apiResponse);
-    }
-    catch (error) {
-        handleError(error);
-    }
-}
-
-// キャラクターの追加
-async function insertCharacter() {
-    // HTMLから入力を取得する
-    const inputName = getInput("charName");
-    const inputRarity = getInput("charRarity");
-
-    // 変換する
-    const name = inputName.value;
-    const rarity = inputRarity.value;
-    if (!name || !rarity) {
-        const apiResponse: ApiResponse = {
-            success: false,
-            message: "すべてのフィールドを入力してください"
-        }
-        showResponse(apiResponse);
-        return;
-    }
-
-    // 渡すデータ
-    const requestData: InsertCharacterRequest = {
-        name: name,
-        rarity: rarity
-    }
-
-    try {
-        const apiResponse: ApiResponse =
-        await postJson<InsertCharacterRequest, ApiResponse>(`/admin/insert_character`, "POST", requestData);
         showResponse(apiResponse);
     }
     catch (error) {
@@ -210,49 +196,91 @@ async function changeBanner() {
     }
 }
 
-// ピックアップ変更
-async function changePickUpClick() {
-    // バナータイトルを取得する
-    const bannerTitle = getInput("bannerTitle");
+// キャラクターの追加
+async function insertCharacter() {
+    // HTMLから入力を取得する
+    const inputName = getInput("charName");
+    const inputRarity = getInput("charRarity");
 
-    // チェックされている星5のキャラクターを取得
-    const selectedStar5: string[] = [];
-    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star5 input[type='checkbox']")
-        .forEach(cb => {
-            if (cb.checked) {
-                selectedStar5.push(cb.value);
-            }
-        });
+    // 変換する
+    const name = inputName.value;
+    const rarity = inputRarity.value;
+    if (!name || !rarity) {
+        const apiResponse: ApiResponse = {
+            success: false,
+            message: "すべてのフィールドを入力してください"
+        }
+        showResponse(apiResponse);
+        return;
+    }
 
-    // チェックされている星4のキャラクターを取得
-    const selectedStar4: string[] = [];
-    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star4 input[type='checkbox']")
-        .forEach(cb => {
-            if (cb.checked) {
-                selectedStar4.push(cb.value);
-            }
-        });
+    // 渡すデータ
+    const requestData: InsertCharacterRequest = {
+        name: name,
+        rarity: rarity
+    }
 
-    // ピックアップを変更する
-    changePickUp(bannerTitle.value, selectedStar5, selectedStar4);
+    try {
+        const apiResponse: ApiResponse =
+        await postJson<InsertCharacterRequest, ApiResponse>(`/admin/insert_character`, "POST", requestData);
+        showResponse(apiResponse);
+    }
+    catch (error) {
+        handleError(error);
+    }
 }
 
 // ピックアップ変更
-async function changePickUp(bannerTitle: string, star5Names: string[], star4Names: string[]) {
+async function changeConstant() {
+    // チェックされているキャラクターを取得
+    const selectedCharacter: number[] = [];
+    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_constant input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selectedCharacter.push(Number(cb.dataset.id));
+            }
+        });
+
     // 渡すデータ
-    const requestData: UpdatePickupRequest = {
-        bannerTitle: bannerTitle,
-        star5Names: star5Names,
-        star4Names: star4Names
+    const requestData: UpdateConstantRequest = {
+        charID: selectedCharacter
     };
 
     try {
         const apiResponse: ApiResponse =
-        await postJson<UpdatePickupRequest, ApiResponse>(`/admin/update_pickup`, "POST", requestData);
+        await postJson<UpdateConstantRequest, ApiResponse>(`/admin/update_pickup`, "POST", requestData);
         showResponse(apiResponse);
     } catch (error) {
         handleError(error);
     }
+}
+
+// ピックアップ変更
+async function changePickUpClick() {
+    // バナータイトルを取得する
+    const bannerTitle = getInput("bannerTitle");
+    const bannerID = Number(bannerTitle.dataset.id)
+
+    // チェックされている星5のキャラクターを取得
+    const selectedStar5: number[] = [];
+    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star5 input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selectedStar5.push(Number(cb.dataset.id));
+            }
+        });
+
+    // チェックされている星4のキャラクターを取得
+    const selectedStar4: number[] = [];
+    document.querySelectorAll<HTMLInputElement>("#checkboxContainer_star4 input[type='checkbox']")
+        .forEach(cb => {
+            if (cb.checked) {
+                selectedStar4.push(Number(cb.dataset.id));
+            }
+        });
+
+    // ピックアップを変更する
+    changePickUp(bannerID, selectedStar5, selectedStar4);
 }
 
 // 石の付与
@@ -300,91 +328,72 @@ async function deleteHistory() {
     }
 }
 
-// ページ切り替え
-function showPage(id: string) {
-    // いったん全て非表示
-    document.querySelectorAll<HTMLElement>(".page").forEach(page => {
-        page.style.display = "none";
+// サーバーと通信する関数
+async function postJson<TRequest, TResponse>(
+    url: string,
+    method: string,
+    request: TRequest
+): Promise<TResponse> {
+
+    const response = await fetch(url, {
+        method: method,
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(request)
     });
 
-    // 指定のページを表示
-    const page = document.getElementById(id);
-    if (page)
+    if (!response.ok) {
+        throw new Error(await response.text());
+    }
+
+    return await response.json() as TResponse;
+}
+
+// ピックアップ変更
+async function changePickUp(bannerID: number, star5ID: number[], star4ID: number[]) {
+    // 渡すデータ
+    const requestData: UpdatePickupRequest = {
+        bannerID: bannerID,
+        star5ID: star5ID,
+        star4ID: star4ID
+    };
+
+    try {
+        const apiResponse: ApiResponse =
+        await postJson<UpdatePickupRequest, ApiResponse>(`/admin/update_pickup`, "POST", requestData);
+        showResponse(apiResponse);
+    } catch (error) {
+        handleError(error);
+    }
+}
+
+// キャラクターのエディタを生成する関数
+function createCharacterEditor(character: Character, pickupIDs: number[], container_star5: HTMLElement, container_star4: HTMLElement) {
+    const label = document.createElement("label");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = character.name;
+
+    // ピックアップIDにあればチェックしておく
+    for (const ID of pickupIDs)
     {
-        page.style.display = "block";
-    }
-}
-
-// チェックボックスを生成する関数
-async function createCheckboxes(bannerTitle: string) {
-    // HTMLから入力を取得する
-    const container_star5 = document.getElementById("checkboxContainer_star5");
-    const container_star4 = document.getElementById("checkboxContainer_star4");
-    if (!(container_star5) || !(container_star4)) {
-        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4]タグがありません");
-    }
-
-    var characters: Character[];
-    try {
-        characters = await postJson<undefined, Character[]>(`/admin/get_character`, "POST", undefined);
-    } catch (error) {
-        handleError(error);
-        return;
-    }
-
-    var pickupIDs: number[];
-    try {
-        pickupIDs = await postJson<string, number[]>(`/admin/get_pickup_id`, "POST", bannerTitle);
-    } catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
-    }
-
-    characters.forEach(char => {
-        const label = document.createElement("label");
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = char.name;
-
-        // ピックアップIDにあればチェックしておく
-        for (const ID of pickupIDs)
+        if (character.id === ID)
         {
-            if (char.id === ID)
-            {
-                checkbox.checked = true;
-            }
+            checkbox.checked = true;
         }
-
-        label.appendChild(checkbox);
-        label.appendChild(document.createTextNode(char.name));
-
-        if (char.rarity === "星5") {
-            container_star5.appendChild(label);
-            container_star5.appendChild(document.createElement("br"));
-        } else {
-            container_star4.appendChild(label);
-            container_star4.appendChild(document.createElement("br"));
-        }
-    });
-}
-
-// バナー更新欄を生成する関数
-async function createBannerInput() {
-    // HTMLから入力を取得する
-    const container_gachaBanner = document.getElementById("banner");
-    if (!container_gachaBanner) {
-        throw new Error("[Error] HTMLにbannerがありません");
     }
 
-    try {
-        const banners: GachaBanner[] =
-        await postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined);
-        banners.forEach(banner => {
-            container_gachaBanner.appendChild(createBannerEditor(banner));
-        });
-    } catch (error) {
-        handleError(error);
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(character.name));
+
+    if (character.rarity === "星5") {
+        container_star5.appendChild(label);
+        container_star5.appendChild(document.createElement("br"));
+    } else {
+        container_star4.appendChild(label);
+        container_star4.appendChild(document.createElement("br"));
     }
 }
 
@@ -461,13 +470,6 @@ function createTextInput(name: string, value: string)
     return input;
 }
 
-// レスポンス生成
-function showResponse(response: ApiResponse)
-{
-    console.log(`[${response.success}]${response.message}`);
-    alert(`[${response.success}]${response.message}`);
-}
-
 // Inputの取得
 function getInput(id: string): HTMLInputElement {
     const element = document.getElementById(id);
@@ -475,6 +477,38 @@ function getInput(id: string): HTMLInputElement {
         throw new Error(`[Error] HTMLに[id="${id}"]のinput要素がありません`);
     }
     return element;
+}
+
+// ボタンに関数を登録する
+function addButtonFunc(buttonName:string, func: EventListenerOrEventListenerObject) {
+    const button = document.getElementById(buttonName) as HTMLButtonElement;
+    if (!(button instanceof HTMLButtonElement))
+    {
+        throw new Error(`[Error] HTMLに[${buttonName}]タグがありません`);
+    }
+    button.addEventListener("click", func);
+}
+
+// ページ切り替え
+function showPage(id: string) {
+    // いったん全て非表示
+    document.querySelectorAll<HTMLElement>(".page").forEach(page => {
+        page.style.display = "none";
+    });
+
+    // 指定のページを表示
+    const page = document.getElementById(id);
+    if (page)
+    {
+        page.style.display = "block";
+    }
+}
+
+// レスポンス生成
+function showResponse(response: ApiResponse)
+{
+    console.log(`[${response.success}]${response.message}`);
+    alert(`[${response.success}]${response.message}`);
 }
 
 // エラーハンドリング

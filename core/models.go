@@ -44,8 +44,8 @@ type GachaBanner struct {
 	SoftPityIncrement int    `json:"softPityIncrement"`
 }
 
-// 現在ピックアップ中のキャラ一覧
+// 現在ピックアップ中のキャラID
 type PickupCharacters struct {
-	Star5 []Character `json:"star5"`
-	Star4 []Character `json:"star4"`
+	Star5ID []int `json:"star5"`
+	Star4ID []int `json:"star4"`
 }

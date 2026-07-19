@@ -7,42 +7,6 @@ import (
 	"log"
 )
 
-// ガチャ石を追加する関数
-func addStones(db *sql.DB, uid string, stonesToAdd int) error {
-	// 石を追加する
-	_, err := db.Exec("UPDATE users SET stones = stones + $1 WHERE uid = $2", stonesToAdd, uid)
-	return err
-}
-
-// 履歴テーブルのデータをすべて削除する関数
-func cleanupHistory(db *sql.DB) error {
-	// PostgreSQLの一括削除とIDリセット
-	_, err := db.Exec("TRUNCATE TABLE history RESTART IDENTITY")
-	return err
-}
-
-// DBから現在のキャラクターの配列を取得する関数
-func getCharacters(db *sql.DB) []core.Character {
-	var chars []core.Character
-
-	// DBから検索
-	rows, err := db.Query("SELECT id name, rarity FROM characters")
-	if err != nil {
-		log.Println("キャラクター取得エラー:", err)
-		return chars
-	}
-	defer rows.Close()
-
-	// 取得したデータを構造体に格納
-	for rows.Next() {
-		var char core.Character
-		rows.Scan(&char.ID, &char.Name, &char.Rarity)
-		chars = append(chars, char)
-	}
-
-	return chars
-}
-
 // DBから現在のバナーの配列を取得する関数
 func getBanners(db *sql.DB) []core.GachaBanner {
 	var banners []core.GachaBanner
@@ -72,36 +36,6 @@ func getBanners(db *sql.DB) []core.GachaBanner {
 	return banners
 }
 
-// DBから現在のキャラクターの配列を取得する関数
-func getPickupCharactersID(db *sql.DB, bannerTitle string) []int {
-	var ids []int
-
-	// DBから検索
-	rows, err := db.Query("SELECT character_id FROM banner_pickups WHERE banner_id = (SELECT id FROM gacha_banners WHERE title = $1)", bannerTitle)
-	if err != nil {
-		log.Println("ピックアップ取得エラー:", err)
-		return ids
-	}
-	defer rows.Close()
-
-	// 取得したデータを構造体に格納
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ids = append(ids, id)
-	}
-
-	return ids
-}
-
-// 新しいキャラクターをDBに挿入する関数
-func insertCharacter(db *sql.DB, character core.Character) error {
-	// キャラクターを追加する
-	_, err := db.Exec("INSERT INTO characters (name, rarity) VALUES ($1, $2)",
-		character.Name, character.Rarity)
-	return err
-}
-
 // 新しいバナーをDBに挿入する関数
 func insertBanner(db *sql.DB, banner core.GachaBanner) error {
 	// バナーを追加する
@@ -115,51 +49,6 @@ func insertBanner(db *sql.DB, banner core.GachaBanner) error {
 		banner.Star5Limit, banner.Star4Limit, banner.Star5PickupProb,
 		banner.PitySoftStart, banner.SoftPityIncrement)
 	return err
-}
-
-// 指定したキャラクターをピックアップに設定する関数
-func changePickupCharacter(db *sql.DB, bannerTitle string, pickupCharacters core.PickupCharacters) error {
-	// トランザクション開始
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// 指定のガチャからピックアップをすべて解除する (gacha_bannersテーブルのtitleからガチャのidを探して指定)
-	_, err = tx.Exec(`
-		DELETE FROM banner_pickups 
-		WHERE banner_id = (SELECT id FROM gacha_banners WHERE title = $1)
-	`, bannerTitle)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// 選ばれたキャラクターたちをピックアップにする
-	for _, character := range pickupCharacters.Star5 {
-		// charactersテーブルから名前でIDを検索し、banner_id=1と一緒に登録する
-		_, err = tx.Exec(`
-			INSERT INTO banner_pickups (banner_id, character_id)
-			SELECT (SELECT id FROM gacha_banners WHERE title = $1), (id FROM characters WHERE name = $2)
-		`, bannerTitle, character.Name)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("ピックアップの登録に失敗しました")
-		}
-	}
-	for _, character := range pickupCharacters.Star4 {
-		// charactersテーブルから名前でIDを検索し、banner_id=1と一緒に登録する
-		_, err = tx.Exec(`
-			INSERT INTO banner_pickups (banner_id, character_id)
-			SELECT (SELECT id FROM gacha_banners WHERE title = $1), (id FROM characters WHERE name = $2)
-		`, bannerTitle, character.Name)
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("ピックアップの登録に失敗しました")
-		}
-	}
-
-	return tx.Commit()
 }
 
 // 指定したバナーの情報を書き換える関数
@@ -178,8 +67,38 @@ func changeBannersInfo(db *sql.DB, banner core.GachaBanner) error {
 	return err
 }
 
+// DBから現在のキャラクターの配列を取得する関数
+func getCharacters(db *sql.DB) []core.Character {
+	var chars []core.Character
+
+	// DBから検索
+	rows, err := db.Query("SELECT id name, rarity FROM characters")
+	if err != nil {
+		log.Println("キャラクター取得エラー:", err)
+		return chars
+	}
+	defer rows.Close()
+
+	// 取得したデータを構造体に格納
+	for rows.Next() {
+		var char core.Character
+		rows.Scan(&char.ID, &char.Name, &char.Rarity)
+		chars = append(chars, char)
+	}
+
+	return chars
+}
+
+// 新しいキャラクターをDBに挿入する関数
+func insertCharacter(db *sql.DB, character core.Character) error {
+	// キャラクターを追加する
+	_, err := db.Exec("INSERT INTO characters (name, rarity) VALUES ($1, $2)",
+		character.Name, character.Rarity)
+	return err
+}
+
 // 恒常キャラを設定する関数
-func changeConstantCharacter(db *sql.DB, constantCharacter []core.Character) error {
+func changeConstantCharacter(db *sql.DB, constantCharacterIDs []int) error {
 	// トランザクション開始
 	tx, err := db.Begin()
 	if err != nil {
@@ -194,10 +113,10 @@ func changeConstantCharacter(db *sql.DB, constantCharacter []core.Character) err
 	}
 
 	// 新しいIDを追加する
-	for _, char := range constantCharacter {
+	for _, ID := range constantCharacterIDs {
 		_, err = tx.Exec(`
 			INSERT INTO constant_characters character_id VALUES ($1)
-		`, char.ID)
+		`, ID)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("ピックアップの登録に失敗しました")
@@ -205,4 +124,84 @@ func changeConstantCharacter(db *sql.DB, constantCharacter []core.Character) err
 	}
 
 	return tx.Commit()
+}
+
+// DBから現在のキャラクターの配列を取得する関数
+func getPickupCharactersID(db *sql.DB, bannerID int) []int {
+	var ids []int
+
+	// DBから検索
+	rows, err := db.Query(`
+	    SELECT character_id FROM banner_pickups WHERE banner_id = $1
+		`, bannerID)
+	if err != nil {
+		log.Println("ピックアップ取得エラー:", err)
+		return ids
+	}
+	defer rows.Close()
+
+	// 取得したデータを構造体に格納
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+
+	return ids
+}
+
+// 指定したキャラクターをピックアップに設定する関数
+func changePickupCharacter(db *sql.DB, bannerID int, pickupCharacters core.PickupCharacters) error {
+	// トランザクション開始
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// 指定のガチャからピックアップをすべて解除する (gacha_bannersテーブルのtitleからガチャのidを探して指定)
+	_, err = tx.Exec(`
+		DELETE FROM banner_pickups WHERE banner_id = $1
+	`, bannerID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 選ばれたキャラクターたちをピックアップにする
+	for _, ID := range pickupCharacters.Star5ID {
+		// charactersテーブルから名前でIDを検索し、banner_idと一緒に登録する
+		_, err = tx.Exec(`
+			INSERT INTO banner_pickups (banner_id, character_id) VALUES ($1, $2)
+		`, bannerID, ID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("ピックアップの登録に失敗しました")
+		}
+	}
+	for _, ID := range pickupCharacters.Star4ID {
+		// charactersテーブルから名前でIDを検索し、banner_idと一緒に登録する
+		_, err = tx.Exec(`
+			INSERT INTO banner_pickups (banner_id, character_id) VALUES ($1, $2)
+		`, bannerID, ID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("ピックアップの登録に失敗しました")
+		}
+	}
+
+	return tx.Commit()
+}
+
+// ガチャ石を追加する関数
+func addStones(db *sql.DB, uid string, stonesToAdd int) error {
+	// 石を追加する
+	_, err := db.Exec("UPDATE users SET stones = stones + $1 WHERE uid = $2", stonesToAdd, uid)
+	return err
+}
+
+// 履歴テーブルのデータをすべて削除する関数
+func cleanupHistory(db *sql.DB) error {
+	// PostgreSQLの一括削除とIDリセット
+	_, err := db.Exec("TRUNCATE TABLE history RESTART IDENTITY")
+	return err
 }
