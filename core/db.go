@@ -39,6 +39,31 @@ func InitSchema(db *sql.DB) error {
 		return err
 	}
 
+	// ガチャテーブル
+	bannersTable := `
+	CREATE TABLE IF NOT EXISTS gacha_banners (
+		id SERIAL PRIMARY KEY,
+		title TEXT NOT NULL,
+		cost INTEGER NOT NULL DEFAULT 300,
+		prob_star5 INTEGER NOT NULL DEFAULT 6,
+		prob_star4 INTEGER NOT NULL DEFAULT 51,
+		star5_limit INTEGER NOT NULL DEFAULT 90,
+		star4_limit INTEGER NOT NULL DEFAULT 10,
+		star5_pickup_prob INTEGER NOT NULL DEFAULT 100,
+		pity_soft_start INTEGER NOT NULL DEFAULT 74,
+		soft_pity_increment INTEGER NOT NULL DEFAULT 6
+	);`
+	if _, err := db.Exec(bannersTable); err != nil {
+		return err
+	}
+
+	// ガチャがない場合デフォルトのガチャ設定を1つだけ自動作成する
+	var bannerCount int
+	db.QueryRow("SELECT COUNT(*) FROM gacha_banners").Scan(&bannerCount)
+	if bannerCount == 0 {
+		db.Exec(`INSERT INTO gacha_banners (title) VALUES ('恒常ガチャ')`)
+	}
+
 	// キャラクターデータを保存するテーブルを作成
 	charactersTable := `
 	CREATE TABLE IF NOT EXISTS characters (
@@ -80,29 +105,13 @@ func InitSchema(db *sql.DB) error {
 		}
 	}
 
-	// ガチャテーブル
-	bannersTable := `
-	CREATE TABLE IF NOT EXISTS gacha_banners (
-		id SERIAL PRIMARY KEY,
-		title TEXT NOT NULL,
-		cost INTEGER NOT NULL DEFAULT 300,
-		prob_star5 INTEGER NOT NULL DEFAULT 6,
-		prob_star4 INTEGER NOT NULL DEFAULT 51,
-		star5_limit INTEGER NOT NULL DEFAULT 90,
-		star4_limit INTEGER NOT NULL DEFAULT 10,
-		star5_pickup_prob INTEGER NOT NULL DEFAULT 100,
-		pity_soft_start INTEGER NOT NULL DEFAULT 74,
-		soft_pity_increment INTEGER NOT NULL DEFAULT 6
+	// 恒常テーブル（中間テーブル）
+	constantTable := `
+	CREATE TABLE IF NOT EXISTS constant_characters (
+		character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE PRIMARY KEY
 	);`
-	if _, err := db.Exec(bannersTable); err != nil {
+	if _, err := db.Exec(constantTable); err != nil {
 		return err
-	}
-
-	// ガチャがない場合デフォルトのガチャ設定を1つだけ自動作成する
-	var bannerCount int
-	db.QueryRow("SELECT COUNT(*) FROM gacha_banners").Scan(&bannerCount)
-	if bannerCount == 0 {
-		db.Exec(`INSERT INTO gacha_banners (title) VALUES ('恒常ガチャ')`)
 	}
 
 	// ピックアップテーブル（中間テーブル）
@@ -113,15 +122,6 @@ func InitSchema(db *sql.DB) error {
 		PRIMARY KEY (banner_id, character_id)
 	);`
 	if _, err := db.Exec(pickupsTable); err != nil {
-		return err
-	}
-
-	// 恒常テーブル（中間テーブル）
-	constantTable := `
-	CREATE TABLE IF NOT EXISTS constant_characters (
-		character_id INTEGER REFERENCES characters(id) ON DELETE CASCADE PRIMARY KEY
-	);`
-	if _, err := db.Exec(constantTable); err != nil {
 		return err
 	}
 
