@@ -127,6 +127,28 @@ func changeConstantCharacter(db *sql.DB, constantCharacterIDs []int) error {
 }
 
 // DBから現在のキャラクターの配列を取得する関数
+func getConstantCharactersID(db *sql.DB) []int {
+	var ids []int
+
+	// DBから検索
+	rows, err := db.Query("SELECT character_id FROM constant_characters")
+	if err != nil {
+		log.Println("恒常取得エラー:", err)
+		return ids
+	}
+	defer rows.Close()
+
+	// 取得したデータを構造体に格納
+	for rows.Next() {
+		var id int
+		rows.Scan(&id)
+		ids = append(ids, id)
+	}
+
+	return ids
+}
+
+// DBから現在のキャラクターの配列を取得する関数
 func getPickupCharactersID(db *sql.DB, bannerID int) []int {
 	var ids []int
 

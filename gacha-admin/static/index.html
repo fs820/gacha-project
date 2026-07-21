@@ -10,7 +10,7 @@
     
     <div class="tabs">
         <button onclick="showPage('banner')">バナー追加</button>
-        <button onclick="showPage('change_banner')">バナー編集</button>
+        <button onclick="showPage('change')">バナー編集</button>
         <button onclick="showPage('character')">キャラクター追加</button>
         <button onclick="showPage('constant')">恒常変更</button>
         <button onclick="showPage('pickup')">ピックアップ変更</button>
@@ -20,25 +20,24 @@
 
     <div id="banner" class="page">
         <h3>バナー追加</h3>
-        <input type="text" id="charName" placeholder="キャラクター名">
-        <select id="charRarity">
-            <option value="星3">星3</option>
-            <option value="星4">星4</option>
-            <option value="星5">星5</option>
-        </select>
-        <br><br>
+        <form id="insert_banner">
+            <input type="text" name="title" placeholder="タイトル">
+            <input type="number" name="cost" placeholder="タイトル">
+            <input type="number" name="probBaseStar5" placeholder="タイトル">
+            <input type="number" name="probBaseStar4" placeholder="タイトル">
+            <input type="number" name="star5Limit" placeholder="タイトル">
+            <input type="number" name="star4Limit" placeholder="タイトル">
+            <input type="number" name="star5PickupProb" placeholder="タイトル">
+            <input type="number" name="pitySoftStart" placeholder="タイトル">
+            <input type="number" name="softPityIncrement" placeholder="タイトル">
+        </form>
         <button id="insertBannerSubmitButton">追加</button>
     </div>
 
-    <div id="change_banner" class="page" style="display:none;">
+    <div id="change" class="page" style="display:none;">
         <h3>バナー編集</h3>
-        <input type="text" id="charName" placeholder="キャラクター名">
-        <select id="charRarity">
-            <option value="星3">星3</option>
-            <option value="星4">星4</option>
-            <option value="星5">星5</option>
-        </select>
-        <br><br>
+        <form id="change_banner">
+        </form>
         <button id="changeBannerSubmitButton">追加</button>
     </div>
 
@@ -62,6 +61,7 @@
 
     <div id="pickup" class="page" style="display:none;">
         <h3>ピックアップ変更</h3>
+        <div id="pull-downContainer_banner"></div>
         <div id="checkboxContainer_star5"></div>
         <div id="checkboxContainer_star4"></div>
         <button id="pickupSubmitButton">決定</button>

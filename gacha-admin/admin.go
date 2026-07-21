@@ -226,6 +226,22 @@ func (app *AdminApp) adminUpdateConstantHandler(w http.ResponseWriter, r *http.R
 }
 
 // 管理者専用：ピックアップID情報を取得するエンドポイント
+func (app *AdminApp) adminGetConstantIDHandler(w http.ResponseWriter, r *http.Request) {
+	// POSTリクエストのみ
+	if r.Method != http.MethodPost {
+		http.Error(w, "許可されていないリクエスト方法です (Method Not Allowed)", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// データベースの関数を呼び出して、指定したキャラクターの情報を取得
+	ids := getConstantCharactersID(app.db)
+
+	// JSON形式でレスポンスを返す
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ids)
+}
+
+// 管理者専用：ピックアップID情報を取得するエンドポイント
 func (app *AdminApp) adminGetPickupIDHandler(w http.ResponseWriter, r *http.Request) {
 	// POSTリクエストのみ
 	if r.Method != http.MethodPost {
