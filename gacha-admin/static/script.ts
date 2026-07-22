@@ -9,6 +9,9 @@ window.onload = async () => {
         createPickupCheckboxes(),
     ]);
 
+    // タブ切り替えボタン
+    addShowPageEvent();
+
     // バナーの追加ボタン
     addButtonFunc("insertBannerSubmitButton", insertBanner);
 
@@ -556,6 +559,20 @@ function createTextInput(name: string, value: string)
     return input;
 }
 
+// タブ切り替えボタンに切り替え機能を付与する
+function addShowPageEvent() {
+    const tabs =document.querySelector<HTMLDivElement>(".tabs");
+    if (!tabs) {
+        throw new Error("[Error] HTMLにtabsがありません");
+    }
+    const buttons = tabs.querySelectorAll<HTMLButtonElement>("button");
+    buttons.forEach(button => {
+        button.addEventListener("click", () => {
+            showPage(button.name);
+        });
+    });
+}
+
 // バナープルダウンの生成
 async function createBannerPulldown(containerName: string)
 {
@@ -596,7 +613,7 @@ async function updateChangeBanner() {
         throw new Error("[Error] HTMLにbannerがありません");
     }
 
-    const pulldown = container_gachaBanner.querySelector<HTMLSelectElement>(`name=[banner_select]`);
+    const pulldown = container_gachaBanner.querySelector<HTMLSelectElement>(`[name="banner_select"]`);
     if (!pulldown) {
         throw new Error(`[Error] change_bannerに[banner_select]タグがありません`);
     }
@@ -696,7 +713,7 @@ function addpulldownFunc(containerName: string, pulldownName:string, func: Event
     {
         throw new Error(`[Error] HTMLに[${containerName}]タグがありません`);
     }
-    const pulldown = container.querySelector<HTMLSelectElement>(`name=[${pulldownName}]`);
+    const pulldown = container.querySelector<HTMLSelectElement>(`[name="${pulldownName}"]`);
     if (!pulldown) {
         throw new Error(`[Error] ${containerName}に[${pulldownName}]タグがありません`);
     }
@@ -706,7 +723,7 @@ function addpulldownFunc(containerName: string, pulldownName:string, func: Event
 // ページ切り替え
 function showPage(id: string) {
     // いったん全て非表示
-    document.querySelectorAll<HTMLElement>("page").forEach(page => {
+    document.querySelectorAll<HTMLElement>(".page").forEach(page => {
         page.style.display = "none";
     });
 
