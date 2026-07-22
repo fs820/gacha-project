@@ -706,7 +706,7 @@ function addpulldownFunc(containerName: string, pulldownName:string, func: Event
 // ページ切り替え
 function showPage(id: string) {
     // いったん全て非表示
-    document.querySelectorAll<HTMLElement>(".page").forEach(page => {
+    document.querySelectorAll<HTMLElement>("page").forEach(page => {
         page.style.display = "none";
     });
 
