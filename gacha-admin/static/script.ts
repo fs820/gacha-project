@@ -47,7 +47,7 @@ window.onload = async () => {
     addButtonFunc("deleteHistorySubmitButton", deleteHistory);
 
     // バナーのプルダウンが変更されたときの処理
-    addpulldownFunc("change_banner", "banner_select", updateChangeBanner);
+    addpulldownFunc("change", "banner_select", updateChangeBanner);
     addpulldownFunc("pulldownContainer_banner", "banner_select", updatePickupCheckboxes);
 }
 
@@ -240,7 +240,7 @@ async function changeBanner() {
 async function insertCharacter() {
     // HTMLから入力を取得する
     const inputName = getInput("charName");
-    const inputRarity = getInput("charRarity");
+    const inputRarity = getSelect("charRarity");
 
     // 変換する
     const name = inputName.value;
@@ -649,6 +649,15 @@ function getInput(id: string): HTMLInputElement {
     const element = document.getElementById(id);
     if (!(element instanceof HTMLInputElement)) {
         throw new Error(`[Error] HTMLに[id="${id}"]のinput要素がありません`);
+    }
+    return element;
+}
+
+// Inputの取得
+function getSelect(id: string): HTMLSelectElement {
+    const element = document.getElementById(id);
+    if (!(element instanceof HTMLSelectElement)) {
+        throw new Error(`[Error] HTMLに[id="${id}"]のselect要素がありません`);
     }
     return element;
 }
