@@ -21,15 +21,42 @@
     <div id="banner" class="page">
         <h3>バナー追加</h3>
         <form id="insert_banner">
-            <input type="text" name="title" placeholder="タイトル">
-            <input type="number" name="cost" placeholder="消費石">
-            <input type="number" name="probBaseStar5" placeholder="星5確率(/1000)">
-            <input type="number" name="probBaseStar4" placeholder="星4確率(/1000)">
-            <input type="number" name="star5Limit" placeholder="星5天井">
-            <input type="number" name="star4Limit" placeholder="星4天井">
-            <input type="number" name="star5PickupProb" placeholder="星5のうちピックアップの確率">
-            <input type="number" name="pitySoftStart" placeholder="確率が上昇し始める回数">
-            <input type="number" name="softPityIncrement" placeholder="確率の上昇具合">
+            <div>
+                <label>タイトル</label>
+                <input type="text" name="title">
+            </div>
+            <div>
+                <label>消費石</label>
+                <input type="number" name="cost">
+            </div>
+            <div>
+                <label>星5確率(/1000)</label>
+                <input type="number" name="probBaseStar5">
+            </div>
+            <div>
+                <label>星4確率(/1000)</label>
+                <input type="number" name="probBaseStar4">
+            </div>
+            <div>
+                <label>星5天井</label>
+                <input type="number" name="star5Limit">
+            </div>
+            <div>
+                <label>星4天井</label>
+                <input type="number" name="star4Limit">
+            </div>
+            <div>
+                <label>星5のうちピックアップの確率</label>
+                <input type="number" name="star5PickupProb">
+            </div>
+            <div>
+                <label>確率が上昇し始める回数</label>
+                <input type="number" name="pitySoftStart">
+            </div>
+            <div>
+                <label>確率の上昇具合</label>
+                <input type="number" name="softPityIncrement">
+            </div>
         </form>
         <button id="insertBannerSubmitButton">追加</button>
     </div>

@@ -44,3 +44,14 @@ body {
     border-bottom: 1px solid #eee;
     padding: 4px 0;
 }
+
+#insert_banner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* 要素間の間隔 */
+    width: 300px; /* お好みで */
+}
+
+#insert_banner input {
+    padding: 6px;
+}
