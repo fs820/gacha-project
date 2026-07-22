@@ -9,13 +9,13 @@ import (
 
 // DBから現在のバナーの配列を取得する関数
 func getBanners(db *sql.DB) []core.GachaBanner {
-	var banners []core.GachaBanner
+	banners := []core.GachaBanner{}
 
 	// DBから検索
 	rows, err := db.Query(`
 	    SELECT id title cost 
-	    prob_star5 prob_star4 star5_limit star4_limit star5_pickup_prob 
-		pity_soft_start soft_pity_increment 
+	    prob_star5, prob_star4, star5_limit, star4_limit, star5_pickup_prob, 
+		pity_soft_start, soft_pity_increment
 		FROM gacha_banners`)
 	if err != nil {
 		log.Println("キャラクター取得エラー:", err)
@@ -69,7 +69,7 @@ func changeBannersInfo(db *sql.DB, banner core.GachaBanner) error {
 
 // DBから現在のキャラクターの配列を取得する関数
 func getCharacters(db *sql.DB) []core.Character {
-	var chars []core.Character
+	chars := []core.Character{}
 
 	// DBから検索
 	rows, err := db.Query("SELECT id name, rarity FROM characters")
@@ -128,7 +128,7 @@ func changeConstantCharacter(db *sql.DB, constantCharacterIDs []int) error {
 
 // DBから現在のキャラクターの配列を取得する関数
 func getConstantCharactersID(db *sql.DB) []int {
-	var ids []int
+	ids := []int{}
 
 	// DBから検索
 	rows, err := db.Query("SELECT character_id FROM constant_characters")
@@ -150,7 +150,7 @@ func getConstantCharactersID(db *sql.DB) []int {
 
 // DBから現在のキャラクターの配列を取得する関数
 func getPickupCharactersID(db *sql.DB, bannerID int) []int {
-	var ids []int
+	ids := []int{}
 
 	// DBから検索
 	rows, err := db.Query(`

@@ -36,7 +36,7 @@ async function createBannerInput() {
     createBannerPulldown("change");
     try {
         const banners = await postJson(`/admin/get_banner`, "POST", undefined);
-        if (banners.length <= 0) {
+        if (!banners || banners.length <= 0) {
             return;
         }
         container_gachaBanner.appendChild(createBannerEditor("change_banner", banners[0]));
@@ -65,8 +65,8 @@ async function createConstantCheckboxes() {
         nowIDs = await postJson(`/admin/get_constant_id`, "POST", undefined);
     }
     catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
     characters.forEach(char => {
         createConstantCharacterEditor(char, nowIDs, container_constant);
@@ -95,8 +95,8 @@ async function createPickupCheckboxes() {
         pickupIDs = await postJson(`/admin/get_pickup_id`, "POST", 0);
     }
     catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
     characters.forEach(char => {
         createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4);
@@ -407,6 +407,7 @@ function createBannerEditor(formName, banner) {
     if (!(form instanceof HTMLFormElement)) {
         throw new Error(`[Error] HTMLに[${formName}]タグがありません`);
     }
+    form.replaceChildren();
     form.id = "change_banner";
     form.dataset.id = banner.id.toString();
     const idLabel = document.createElement("span");
@@ -422,14 +423,6 @@ function createBannerEditor(formName, banner) {
     form.appendChild(createLabeledNumberInput("pitySoftStart", "確率上昇開始回数", banner.pitySoftStart));
     form.appendChild(createLabeledNumberInput("softPityIncrement", "確率上昇率", banner.softPityIncrement));
     return form;
-}
-// バナーのエディタを更新する関数
-function updateBannerEditor(form, formName, banner) {
-    const newEditor = createBannerEditor(formName, banner);
-    const oldEditor = form.querySelector(`.banner[data-id="${banner.id}"]`);
-    if (oldEditor) {
-        oldEditor.replaceWith(newEditor);
-    }
 }
 // LABELと数値入力欄を生成する関数
 function createLabeledNumberInput(name, labelText, value) {
@@ -520,13 +513,13 @@ async function updateChangeBanner() {
         throw new Error(`[Error] change_bannerに[banner_select]タグがありません`);
     }
     const id = Number(pulldown.value);
-    const from = document.getElementById("change_banner");
-    if (!(from instanceof HTMLFormElement)) {
-        throw new Error(`[Error] HTMLに[${from}]のinput要素がありません`);
-    }
     try {
         const banners = await postJson(`/admin/get_banner`, "POST", undefined);
-        updateBannerEditor(from, "change_banner", banners[id]);
+        const banner = banners.find(b => b.id === id);
+        if (!banner) {
+            throw new Error(`[Error] バナー更新エラー`);
+        }
+        createBannerEditor("change_banner", banner);
     }
     catch (error) {
         handleError(error);
@@ -553,15 +546,15 @@ async function updatePickupCheckboxes() {
         pickupIDs = await postJson(`/admin/get_pickup_id`, "POST", Number(banner_select.value));
     }
     catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
     const checkboxes_star5 = container_star5.querySelectorAll("input[type='checkbox']");
     checkboxes_star5.forEach(cb => {
         const id = Number(cb.dataset.id);
         cb.checked = pickupIDs.includes(id);
     });
-    const checkboxes_star4 = container_star5.querySelectorAll("input[type='checkbox']");
+    const checkboxes_star4 = container_star4.querySelectorAll("input[type='checkbox']");
     checkboxes_star4.forEach(cb => {
         const id = Number(cb.dataset.id);
         cb.checked = pickupIDs.includes(id);
@@ -581,7 +574,7 @@ function getFormToInput(formName, name) {
     if (!(form)) {
         throw new Error(`[Error] HTMLにform:${formName}要素がありません`);
     }
-    const element = form.querySelector(`[name=${name}]`);
+    const element = form.querySelector(`[name="${name}"]`);
     if (!(element instanceof HTMLInputElement)) {
         throw new Error(`[Error] HTMLのform:${formName}に[name="${name}"]のinput要素がありません`);
     }

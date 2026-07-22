@@ -3,10 +3,23 @@ import { ApiResponse, GachaBanner, Character, InsertBannerRequest, InsertCharact
 
 // 最初にチェックボックスを生成
 window.onload = async () => {
+    // バナーとキャラクターの取得
+    let banners: GachaBanner[];
+    let characters: Character[];
+    try {
+        [banners, characters] = await Promise.all([
+            postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined),
+            postJson<undefined, Character[]>(`/admin/get_character`, "POST", undefined),
+        ]);
+    } catch (error) {
+        handleError(error);
+        return; // banners/charactersが無いと以降の初期化ができないのでここで止める
+    }
+
     await Promise.all([
-        createBannerInput(),
-        createConstantCheckboxes(),
-        createPickupCheckboxes(),
+        createBannerInput(banners),
+        createConstantCheckboxes(characters),
+        createPickupCheckboxes(banners, characters),
     ]);
 
     // タブ切り替えボタン
@@ -39,7 +52,7 @@ window.onload = async () => {
 }
 
 // バナー更新欄を生成する関数
-async function createBannerInput() {
+async function createBannerInput(banners: GachaBanner[]) {
     // HTMLから入力を取得する
     const container_gachaBanner = document.getElementById("change");
     if (!container_gachaBanner) {
@@ -47,42 +60,27 @@ async function createBannerInput() {
     }
 
     // プルダウンを作る
-    createBannerPulldown("change");
-
-    try {
-        const banners: GachaBanner[] =
-        await postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined);
-        if (banners.length <= 0) {
-            return;
-        }
-        container_gachaBanner.appendChild(createBannerEditor("change_banner", banners[0]));
-    } catch (error) {
-        handleError(error);
+    createBannerPulldown("change", banners);
+    if (!banners || banners.length <= 0) {
+        return;
     }
+    container_gachaBanner.appendChild(createBannerEditor("change_banner", banners[0]));
 }
 
 // チェックボックスを生成する関数
-async function createConstantCheckboxes() {
+async function createConstantCheckboxes(characters: Character[]) {
     // HTMLから入力を取得する
     const container_constant = document.getElementById("checkboxContainer_constant");
     if (!(container_constant)) {
         throw new Error("[Error] HTMLに[container_constant]タグがありません");
     }
 
-    var characters: Character[];
-    try {
-        characters = await postJson<undefined, Character[]>(`/admin/get_character`, "POST", undefined);
-    } catch (error) {
-        handleError(error);
-        return;
-    }
-
     var nowIDs: number[];
     try {
         nowIDs = await postJson<undefined, number[]>(`/admin/get_constant_id`, "POST", undefined);
     } catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
 
     characters.forEach(char => {
@@ -91,9 +89,9 @@ async function createConstantCheckboxes() {
 }
 
 // チェックボックスを生成する関数
-async function createPickupCheckboxes() {
+async function createPickupCheckboxes(banners: GachaBanner[], characters: Character[]) {
     // バナープルダウンを作る
-    await createBannerPulldown("pulldownContainer_banner");
+    createBannerPulldown("pulldownContainer_banner", banners);
 
     // HTMLから入力を取得する
     const container_star5 = document.getElementById("checkboxContainer_star5");
@@ -102,20 +100,12 @@ async function createPickupCheckboxes() {
         throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4]タグがありません");
     }
 
-    var characters: Character[];
-    try {
-        characters = await postJson<undefined, Character[]>(`/admin/get_character`, "POST", undefined);
-    } catch (error) {
-        handleError(error);
-        return;
-    }
-
     var pickupIDs: number[];
     try {
         pickupIDs = await postJson<number, number[]>(`/admin/get_pickup_id`, "POST", 0);
     } catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
 
     characters.forEach(char => {
@@ -479,6 +469,8 @@ function createBannerEditor(formName: string, banner: GachaBanner): HTMLElement
     if (!(form instanceof HTMLFormElement)) {
         throw new Error(`[Error] HTMLに[${formName}]タグがありません`);
     }
+    form.replaceChildren();
+
     form.id = "change_banner";
     form.dataset.id = banner.id.toString();
     const idLabel = document.createElement("span");
@@ -495,19 +487,6 @@ function createBannerEditor(formName: string, banner: GachaBanner): HTMLElement
     form.appendChild(createLabeledNumberInput("pitySoftStart", "確率上昇開始回数", banner.pitySoftStart));
     form.appendChild(createLabeledNumberInput("softPityIncrement", "確率上昇率", banner.softPityIncrement));
     return form;
-}
-
-// バナーのエディタを更新する関数
-function updateBannerEditor(form: HTMLFormElement , formName: string, banner: GachaBanner) {
-    const newEditor = createBannerEditor(formName, banner);
-
-    const oldEditor = form.querySelector<HTMLDivElement>(
-        `.banner[data-id="${banner.id}"]`
-    );
-
-    if (oldEditor) {
-        oldEditor.replaceWith(newEditor);
-    }
 }
 
 // LABELと数値入力欄を生成する関数
@@ -574,18 +553,11 @@ function addShowPageEvent() {
 }
 
 // バナープルダウンの生成
-async function createBannerPulldown(containerName: string)
+function createBannerPulldown(containerName: string, banners: GachaBanner[])
 {
     const container = document.getElementById(containerName);
     if (!(container)) {
         throw new Error(`[Error] HTMLに[${containerName}]タグがありません`);
-    }
-    var banners: GachaBanner[];
-    try {
-        banners = await postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined);
-    } catch (error) {
-        handleError(error);
-        return;
     }
     if (banners.length === 0)
     {
@@ -619,15 +591,14 @@ async function updateChangeBanner() {
     }
     const id = Number(pulldown.value);
 
-    const from = document.getElementById("change_banner");
-    if (!(from instanceof HTMLFormElement)) {
-        throw new Error(`[Error] HTMLに[${from}]のinput要素がありません`);
-    }
-
     try {
         const banners: GachaBanner[] =
         await postJson<undefined, GachaBanner[]>(`/admin/get_banner`, "POST", undefined);
-        updateBannerEditor(from, "change_banner", banners[id]);
+        const banner =banners.find(b => b.id === id)
+        if (!banner){
+            throw new Error(`[Error] バナー更新エラー`);
+        }
+        createBannerEditor("change_banner", banner);
     } catch (error) {
         handleError(error);
     }
@@ -656,8 +627,8 @@ async function updatePickupCheckboxes()
     try {
         pickupIDs = await postJson<number, number[]>(`/admin/get_pickup_id`, "POST", Number(banner_select.value));
     } catch (error) {
-        console.error(error);
-        alert("通信エラーが発生しました");
+        handleError(error);
+        return;
     }
 
     const checkboxes_star5 = container_star5.querySelectorAll<HTMLInputElement>("input[type='checkbox']");
@@ -666,7 +637,7 @@ async function updatePickupCheckboxes()
         cb.checked = pickupIDs.includes(id);
     });
 
-    const checkboxes_star4 = container_star5.querySelectorAll<HTMLInputElement>("input[type='checkbox']");
+    const checkboxes_star4 = container_star4.querySelectorAll<HTMLInputElement>("input[type='checkbox']");
     checkboxes_star4.forEach(cb => {
         const id = Number(cb.dataset.id);
         cb.checked = pickupIDs.includes(id);
@@ -689,7 +660,7 @@ function getFormToInput(formName: string, name: string): HTMLInputElement {
         throw new Error(`[Error] HTMLにform:${formName}要素がありません`);
     }
 
-    const element = form.querySelector<HTMLInputElement>(`[name=${name}]`);
+    const element = form.querySelector<HTMLInputElement>(`[name="${name}"]`);
     if (!(element instanceof HTMLInputElement)) {
         throw new Error(`[Error] HTMLのform:${formName}に[name="${name}"]のinput要素がありません`);
     }
