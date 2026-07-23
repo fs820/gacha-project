@@ -220,9 +220,11 @@ func (app *AdminApp) adminUpdateConstantHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// JSON形式でレスポンスを返す
+	var str string
 	for _, ID := range req.CharID {
-		sendSuccessResponse(w, fmt.Sprintf("恒常キャラクターを [%d] に更新しました！\n", ID))
+		str += fmt.Sprintf("恒常キャラクターを [%d] に更新しました！\n", ID)
 	}
+	sendSuccessResponse(w, str)
 }
 
 // 管理者専用：ピックアップID情報を取得するエンドポイント
@@ -296,12 +298,14 @@ func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	// JSON形式でレスポンスを返す
+	var str string
 	for _, ID := range req.Star5ID {
-		sendSuccessResponse(w, fmt.Sprintf("星5ピックアップキャラクターを [%d] に更新しました！\n", ID))
+		str += fmt.Sprintf("星5ピックアップキャラクターを [%d] に更新しました！\n", ID)
 	}
 	for _, ID := range req.Star4ID {
-		sendSuccessResponse(w, fmt.Sprintf("星4ピックアップキャラクターを [%d] に更新しました！\n", ID))
+		str += fmt.Sprintf("星4ピックアップキャラクターを [%d] に更新しました！\n", ID)
 	}
+	sendSuccessResponse(w, str)
 }
 
 // 管理者専用：指定したユーザーに石を付与するエンドポイント
