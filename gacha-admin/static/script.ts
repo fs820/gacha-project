@@ -47,14 +47,14 @@ window.onload = async () => {
     addButtonFunc("deleteHistorySubmitButton", deleteHistory);
 
     // バナーのプルダウンが変更されたときの処理
-    addpulldownFunc("change", "banner_select", updateChangeBanner);
+    addpulldownFunc("pulldownContainer_change", "banner_select", updateChangeBanner);
     addpulldownFunc("pulldownContainer_banner", "banner_select", updatePickupCheckboxes);
 }
 
 // バナー更新欄を生成する関数
 async function createBannerInput(banners: GachaBanner[]) {
     // プルダウンを作る
-    createBannerPulldown("change", banners);
+    createBannerPulldown("pulldownContainer_change", banners);
     if (!banners || banners.length <= 0) {
         return;
     }
@@ -167,11 +167,11 @@ async function insertBanner() {
 
 // バナーの更新
 async function changeBanner() {
-    const change_banner = document.getElementById("change_banner");
-    if (!(change_banner)) {
-        throw new Error("[Error] HTMLに[change_banner]タグがありません");
+    const container = document.getElementById("pulldownContainer_change");
+    if (!(container)) {
+        throw new Error("[Error] HTMLに[pulldownContainer_change]タグがありません");
     }
-    const banner_select = change_banner.querySelector<HTMLSelectElement>(`[name='banner_select']`);
+    const banner_select = container?.querySelector<HTMLSelectElement>(`[name='banner_select']`);
     if (!banner_select) {
         throw new Error("[Error] change_banner[banner_select]タグがありません");
     }
@@ -567,16 +567,15 @@ function createBannerPulldown(containerName: string, banners: GachaBanner[])
 // バナー更新欄の更新
 async function updateChangeBanner() {
     // HTMLから入力を取得する
-    const container_gachaBanner = document.getElementById("change");
+    const container_gachaBanner = document.getElementById("pulldownContainer_change");
     if (!container_gachaBanner) {
         throw new Error("[Error] HTMLにbannerがありません");
     }
-
-    const pulldown = container_gachaBanner.querySelector<HTMLSelectElement>(`[name="banner_select"]`);
-    if (!pulldown) {
+const banner_select = container_gachaBanner?.querySelector<HTMLSelectElement>("[name='banner_select']");
+    if (!banner_select) {
         throw new Error(`[Error] change_bannerに[banner_select]タグがありません`);
     }
-    const id = Number(pulldown.value);
+    const id = Number(banner_select.value);
 
     try {
         const banners: GachaBanner[] =
