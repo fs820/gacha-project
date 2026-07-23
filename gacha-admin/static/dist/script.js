@@ -246,7 +246,7 @@ async function changeConstant() {
     });
     // 渡すデータ
     const requestData = {
-        charID: selectedCharacter
+        char_id: selectedCharacter
     };
     try {
         const apiResponse = await postJson(`/admin/update_constant`, "POST", requestData);
@@ -342,9 +342,9 @@ async function postJson(url, method, request) {
 async function changePickUp(bannerID, star5ID, star4ID) {
     // 渡すデータ
     const requestData = {
-        bannerID: bannerID,
-        star5ID: star5ID,
-        star4ID: star4ID
+        banner_id: bannerID,
+        star5_id: star5ID,
+        star4_id: star4ID
     };
     try {
         const apiResponse = await postJson(`/admin/update_pickup`, "POST", requestData);
