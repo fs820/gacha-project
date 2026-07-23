@@ -471,7 +471,7 @@ function createBannerPulldown(containerName, banners) {
         option.textContent = banner.title; // 表示する文字
         banner_select.appendChild(option);
     });
-    container.replaceChildren(banner_select);
+    container.appendChild(banner_select);
 }
 // バナー更新欄の更新
 async function updateChangeBanner() {

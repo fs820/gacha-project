@@ -561,7 +561,7 @@ function createBannerPulldown(containerName: string, banners: GachaBanner[])
 
         banner_select.appendChild(option);
     });
-    container.replaceChildren(banner_select);
+    container.appendChild(banner_select);
 }
 
 // バナー更新欄の更新
