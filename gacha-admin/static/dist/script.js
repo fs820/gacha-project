@@ -40,17 +40,12 @@ window.onload = async () => {
 };
 // バナー更新欄を生成する関数
 async function createBannerInput(banners) {
-    // HTMLから入力を取得する
-    const container_gachaBanner = document.getElementById("change");
-    if (!container_gachaBanner) {
-        throw new Error("[Error] HTMLにbannerがありません");
-    }
     // プルダウンを作る
     createBannerPulldown("change", banners);
     if (!banners || banners.length <= 0) {
         return;
     }
-    container_gachaBanner.appendChild(createBannerEditor("change_banner", banners[0]));
+    createBannerEditor("change_banner", banners[0]);
 }
 // チェックボックスを生成する関数
 async function createConstantCheckboxes(characters) {
@@ -362,11 +357,7 @@ function createConstantCharacterEditor(character, nowIDs, container_constant) {
     checkbox.dataset.id = character.id.toString();
     checkbox.value = character.name;
     // 今のIDにあればチェックしておく
-    for (const ID of nowIDs) {
-        if (character.id === ID) {
-            checkbox.checked = true;
-        }
-    }
+    checkbox.checked = nowIDs.includes(character.id);
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(character.name));
     container_constant.appendChild(label);
@@ -399,7 +390,6 @@ function createBannerEditor(formName, banner) {
         throw new Error(`[Error] HTMLに[${formName}]タグがありません`);
     }
     form.replaceChildren();
-    form.id = "change_banner";
     form.dataset.id = banner.id.toString();
     const idLabel = document.createElement("span");
     idLabel.textContent = `ID: ${banner.id}`;
@@ -413,7 +403,6 @@ function createBannerEditor(formName, banner) {
     form.appendChild(createLabeledNumberInput("star5PickupProb", "星5ピックアップ率", banner.star5PickupProb));
     form.appendChild(createLabeledNumberInput("pitySoftStart", "確率上昇開始回数", banner.pitySoftStart));
     form.appendChild(createLabeledNumberInput("softPityIncrement", "確率上昇率", banner.softPityIncrement));
-    return form;
 }
 // LABELと数値入力欄を生成する関数
 function createLabeledNumberInput(name, labelText, value) {
@@ -482,7 +471,7 @@ function createBannerPulldown(containerName, banners) {
         option.textContent = banner.title; // 表示する文字
         banner_select.appendChild(option);
     });
-    container.appendChild(banner_select);
+    container.replaceChildren(banner_select);
 }
 // バナー更新欄の更新
 async function updateChangeBanner() {
