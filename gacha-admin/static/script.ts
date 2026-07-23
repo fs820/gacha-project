@@ -53,18 +53,13 @@ window.onload = async () => {
 
 // バナー更新欄を生成する関数
 async function createBannerInput(banners: GachaBanner[]) {
-    // HTMLから入力を取得する
-    const container_gachaBanner = document.getElementById("change");
-    if (!container_gachaBanner) {
-        throw new Error("[Error] HTMLにbannerがありません");
-    }
-
     // プルダウンを作る
     createBannerPulldown("change", banners);
     if (!banners || banners.length <= 0) {
         return;
     }
-    container_gachaBanner.appendChild(createBannerEditor("change_banner", banners[0]));
+    
+    createBannerEditor("change_banner", banners[0]);
 }
 
 // チェックボックスを生成する関数
@@ -423,13 +418,7 @@ function createConstantCharacterEditor(character: Character, nowIDs: number[], c
     checkbox.value = character.name;
 
     // 今のIDにあればチェックしておく
-    for (const ID of nowIDs)
-    {
-        if (character.id === ID)
-        {
-            checkbox.checked = true;
-        }
-    }
+    checkbox.checked = nowIDs.includes(character.id);
 
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(character.name));
@@ -463,7 +452,7 @@ function createPickupCharacterEditor(character: Character, pickupIDs: number[], 
 }
 
 // バナーのエディタを生成する関数
-function createBannerEditor(formName: string, banner: GachaBanner): HTMLElement
+function createBannerEditor(formName: string, banner: GachaBanner)
 {
     const form = document.getElementById(formName);
     if (!(form instanceof HTMLFormElement)) {
@@ -471,7 +460,6 @@ function createBannerEditor(formName: string, banner: GachaBanner): HTMLElement
     }
     form.replaceChildren();
 
-    form.id = "change_banner";
     form.dataset.id = banner.id.toString();
     const idLabel = document.createElement("span");
     idLabel.textContent = `ID: ${banner.id}`;
@@ -486,7 +474,6 @@ function createBannerEditor(formName: string, banner: GachaBanner): HTMLElement
     form.appendChild(createLabeledNumberInput("star5PickupProb", "星5ピックアップ率", banner.star5PickupProb));
     form.appendChild(createLabeledNumberInput("pitySoftStart", "確率上昇開始回数", banner.pitySoftStart));
     form.appendChild(createLabeledNumberInput("softPityIncrement", "確率上昇率", banner.softPityIncrement));
-    return form;
 }
 
 // LABELと数値入力欄を生成する関数
@@ -574,7 +561,7 @@ function createBannerPulldown(containerName: string, banners: GachaBanner[])
 
         banner_select.appendChild(option);
     });
-    container.appendChild(banner_select);
+    container.replaceChildren(banner_select);
 }
 
 // バナー更新欄の更新
