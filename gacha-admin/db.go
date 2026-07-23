@@ -13,7 +13,7 @@ func getBanners(db *sql.DB) []core.GachaBanner {
 
 	// DBから検索
 	rows, err := db.Query(`
-	    SELECT id title cost 
+	    SELECT id, title, cost,
 	    prob_star5, prob_star4, star5_limit, star4_limit, star5_pickup_prob, 
 		pity_soft_start, soft_pity_increment
 		FROM gacha_banners`)
@@ -40,11 +40,11 @@ func getBanners(db *sql.DB) []core.GachaBanner {
 func insertBanner(db *sql.DB, banner core.GachaBanner) error {
 	// バナーを追加する
 	_, err := db.Exec(`
-	    INSERT INTO gacha_banners (id title cost 
-	    prob_star5 prob_star4 star5_limit star4_limit star5_pickup_prob 
-		pity_soft_start soft_pity_increment)
+	    INSERT INTO gacha_banners (title, cost,
+	    prob_star5, prob_star4, star5_limit, star4_limit, star5_pickup_prob,
+		pity_soft_start, soft_pity_increment)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-		`, banner.ID, banner.Title, banner.Cost,
+		`, banner.Title, banner.Cost,
 		banner.ProbBaseStar5, banner.ProbBaseStar4,
 		banner.Star5Limit, banner.Star4Limit, banner.Star5PickupProb,
 		banner.PitySoftStart, banner.SoftPityIncrement)
@@ -72,7 +72,7 @@ func getCharacters(db *sql.DB) []core.Character {
 	chars := []core.Character{}
 
 	// DBから検索
-	rows, err := db.Query("SELECT id name, rarity FROM characters")
+	rows, err := db.Query("SELECT id, name, rarity FROM characters")
 	if err != nil {
 		log.Println("キャラクター取得エラー:", err)
 		return chars
@@ -99,6 +99,11 @@ func insertCharacter(db *sql.DB, character core.Character) error {
 
 // 恒常キャラを設定する関数
 func changeConstantCharacter(db *sql.DB, constantCharacterIDs []int) error {
+	// キャラクターリストチェック
+	if len(constantCharacterIDs) <= 0 {
+		return fmt.Errorf("キャラクターリストが空です！！")
+	}
+
 	// トランザクション開始
 	tx, err := db.Begin()
 	if err != nil {
@@ -115,7 +120,7 @@ func changeConstantCharacter(db *sql.DB, constantCharacterIDs []int) error {
 	// 新しいIDを追加する
 	for _, ID := range constantCharacterIDs {
 		_, err = tx.Exec(`
-			INSERT INTO constant_characters character_id VALUES ($1)
+			INSERT INTO constant_characters (character_id) VALUES ($1)
 		`, ID)
 		if err != nil {
 			tx.Rollback()
@@ -174,6 +179,11 @@ func getPickupCharactersID(db *sql.DB, bannerID int) []int {
 
 // 指定したキャラクターをピックアップに設定する関数
 func changePickupCharacter(db *sql.DB, bannerID int, pickupCharacters core.PickupCharacters) error {
+	// キャラクターリストチェック
+	if len(pickupCharacters.Star5ID) <= 0 || len(pickupCharacters.Star4ID) <= 0 {
+		return fmt.Errorf("キャラクターリストが空です！！")
+	}
+
 	// トランザクション開始
 	tx, err := db.Begin()
 	if err != nil {

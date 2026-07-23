@@ -46,14 +46,14 @@ export interface InsertCharacterRequest {
 
 // 恒常変更のリクエスト型
 export interface UpdateConstantRequest {
-	charID: number[]
+	char_id: number[]
 }
 
 // ピックアップ変更のリクエスト型
 export interface UpdatePickupRequest {
-	bannerID: number,
-	star5ID:  number[],
-	star4ID:  number[]
+	banner_id: number,
+	star5_id:  number[],
+	star4_id:  number[]
 }
 
 // 石の付与のリクエスト型

@@ -69,7 +69,7 @@ func main() {
 	http.Handle("/admin/get_constant_id", basicAuth(http.HandlerFunc(app.adminGetConstantIDHandler)))    // 恒常ID取得
 	http.Handle("/admin/get_pickup_id", basicAuth(http.HandlerFunc(app.adminGetPickupIDHandler)))        // ピックアップID取得
 	http.Handle("/admin/update_pickup", basicAuth(http.HandlerFunc(app.adminUpdatePickupHandler)))       // ピックアップ変更
-	http.Handle("/admin/add_stones", basicAuth(http.HandlerFunc(app.adminAddStonesHandler)))             // 石の付与
+	http.Handle("/admin/add_stone", basicAuth(http.HandlerFunc(app.adminAddStonesHandler)))              // 石の付与
 	http.Handle("/admin/delete_history", basicAuth(http.HandlerFunc(app.adminDeleteHistoryHandler)))     // 履歴の削除
 
 	// サーバー起動のメッセージを表示

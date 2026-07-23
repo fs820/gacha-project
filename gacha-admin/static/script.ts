@@ -283,7 +283,7 @@ async function changeConstant() {
 
     // 渡すデータ
     const requestData: UpdateConstantRequest = {
-        charID: selectedCharacter
+        char_id: selectedCharacter
     };
 
     try {
@@ -399,9 +399,9 @@ async function postJson<TRequest, TResponse>(
 async function changePickUp(bannerID: number, star5ID: number[], star4ID: number[]) {
     // 渡すデータ
     const requestData: UpdatePickupRequest = {
-        bannerID: bannerID,
-        star5ID: star5ID,
-        star4ID: star4ID
+        banner_id: bannerID,
+        star5_id: star5ID,
+        star4_id: star4ID
     };
 
     try {
