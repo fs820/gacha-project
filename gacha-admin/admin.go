@@ -43,6 +43,7 @@ type UpdatePickupRequest struct {
 	BannerID int   `json:"banner_id"`
 	Star5ID  []int `json:"star5_id"`
 	Star4ID  []int `json:"star4_id"`
+	Star3ID  []int `json:"star3_id"`
 }
 
 // 石の付与のリクエスト型
@@ -288,6 +289,9 @@ func (app *AdminApp) adminUpdatePickupHandler(w http.ResponseWriter, r *http.Req
 	}
 	for _, ID := range req.Star4ID {
 		pickupCharacters.Star4ID = append(pickupCharacters.Star4ID, ID)
+	}
+	for _, ID := range req.Star3ID {
+		pickupCharacters.Star3ID = append(pickupCharacters.Star3ID, ID)
 	}
 
 	// データベースの関数を呼び出して、指定したキャラクターをピックアップに設定

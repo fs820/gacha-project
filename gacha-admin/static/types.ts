@@ -53,7 +53,8 @@ export interface UpdateConstantRequest {
 export interface UpdatePickupRequest {
 	banner_id: number,
 	star5_id:  number[],
-	star4_id:  number[]
+	star4_id:  number[],
+	star3_id:  number[]
 }
 
 // 石の付与のリクエスト型

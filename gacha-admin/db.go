@@ -220,6 +220,16 @@ func changePickupCharacter(db *sql.DB, bannerID int, pickupCharacters core.Picku
 			return fmt.Errorf("ピックアップの登録に失敗しました")
 		}
 	}
+	for _, ID := range pickupCharacters.Star3ID {
+		// charactersテーブルから名前でIDを検索し、banner_idと一緒に登録する
+		_, err = tx.Exec(`
+			INSERT INTO banner_pickups (banner_id, character_id) VALUES ($1, $2)
+		`, bannerID, ID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("ピックアップの登録に失敗しました")
+		}
+	}
 
 	return tx.Commit()
 }

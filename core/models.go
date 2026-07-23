@@ -48,4 +48,5 @@ type GachaBanner struct {
 type PickupCharacters struct {
 	Star5ID []int `json:"star5"`
 	Star4ID []int `json:"star4"`
+	Star3ID []int `json:"star3"`
 }
