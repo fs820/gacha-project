@@ -43,7 +43,7 @@ func insertBanner(db *sql.DB, banner core.GachaBanner) error {
 	    INSERT INTO gacha_banners (title, cost,
 	    prob_star5, prob_star4, star5_limit, star4_limit, star5_pickup_prob,
 		pity_soft_start, soft_pity_increment)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		`, banner.Title, banner.Cost,
 		banner.ProbBaseStar5, banner.ProbBaseStar4,
 		banner.Star5Limit, banner.Star4Limit, banner.Star5PickupProb,
