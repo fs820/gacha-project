@@ -63,7 +63,22 @@ async function createConstantCheckboxes(characters) {
         return;
     }
     characters.forEach(char => {
-        createConstantCharacterEditor(char, nowIDs, container_constant);
+        const label = document.createElement("label");
+        label.appendChild(new Text("星5"));
+        if (char.rarity === "星5")
+            createConstantCharacterEditor(char, nowIDs, container_constant);
+    });
+    characters.forEach(char => {
+        const label = document.createElement("label");
+        label.appendChild(new Text("星4"));
+        if (char.rarity === "星4")
+            createConstantCharacterEditor(char, nowIDs, container_constant);
+    });
+    characters.forEach(char => {
+        const label = document.createElement("label");
+        label.appendChild(new Text("星3"));
+        if (char.rarity === "星3")
+            createConstantCharacterEditor(char, nowIDs, container_constant);
     });
 }
 // チェックボックスを生成する関数
@@ -73,8 +88,9 @@ async function createPickupCheckboxes(banners, characters) {
     // HTMLから入力を取得する
     const container_star5 = document.getElementById("checkboxContainer_star5");
     const container_star4 = document.getElementById("checkboxContainer_star4");
-    if (!(container_star5) || !(container_star4)) {
-        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4]タグがありません");
+    const container_star3 = document.getElementById("checkboxContainer_star3");
+    if (!(container_star5) || !(container_star4) || !(container_star3)) {
+        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4][checkboxContainer_star3]タグがありません");
     }
     var pickupIDs;
     try {
@@ -85,7 +101,22 @@ async function createPickupCheckboxes(banners, characters) {
         return;
     }
     characters.forEach(char => {
-        createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4);
+        const label = document.createElement("label");
+        label.appendChild(new Text("星5"));
+        if (char.rarity === "星5")
+            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
+    });
+    characters.forEach(char => {
+        const label = document.createElement("label");
+        label.appendChild(new Text("星4"));
+        if (char.rarity === "星4")
+            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
+    });
+    characters.forEach(char => {
+        const label = document.createElement("label");
+        label.appendChild(new Text("星3"));
+        if (char.rarity === "星3")
+            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
     });
 }
 // バナーの追加
@@ -277,8 +308,16 @@ async function changePickUpClick() {
             selectedStar4.push(Number(cb.dataset.id));
         }
     });
+    // チェックされている星4のキャラクターを取得
+    const selectedStar3 = [];
+    document.querySelectorAll("#checkboxContainer_star3 input[type='checkbox']")
+        .forEach(cb => {
+        if (cb.checked) {
+            selectedStar4.push(Number(cb.dataset.id));
+        }
+    });
     // ピックアップを変更する
-    changePickUp(Number(banner_select.value), selectedStar5, selectedStar4);
+    changePickUp(Number(banner_select.value), selectedStar5, selectedStar4, selectedStar3);
 }
 // 石の付与
 async function addStone() {
@@ -334,12 +373,13 @@ async function postJson(url, method, request) {
     return await response.json();
 }
 // ピックアップ変更
-async function changePickUp(bannerID, star5ID, star4ID) {
+async function changePickUp(bannerID, star5ID, star4ID, star3ID) {
     // 渡すデータ
     const requestData = {
         banner_id: bannerID,
         star5_id: star5ID,
-        star4_id: star4ID
+        star4_id: star4ID,
+        star3_id: star3ID
     };
     try {
         const apiResponse = await postJson(`/admin/update_pickup`, "POST", requestData);
@@ -364,7 +404,7 @@ function createConstantCharacterEditor(character, nowIDs, container_constant) {
     container_constant.appendChild(document.createElement("br"));
 }
 // ピックアップキャラクターのエディタを生成する関数
-function createPickupCharacterEditor(character, pickupIDs, container_star5, container_star4) {
+function createPickupCharacterEditor(character, pickupIDs, container_star5, container_star4, container_star3) {
     const label = document.createElement("label");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -378,9 +418,13 @@ function createPickupCharacterEditor(character, pickupIDs, container_star5, cont
         container_star5.appendChild(label);
         container_star5.appendChild(document.createElement("br"));
     }
-    else {
+    else if (character.rarity === "星5") {
         container_star4.appendChild(label);
         container_star4.appendChild(document.createElement("br"));
+    }
+    else {
+        container_star3.appendChild(label);
+        container_star3.appendChild(document.createElement("br"));
     }
 }
 // バナーのエディタを生成する関数
@@ -510,8 +554,9 @@ async function updatePickupCheckboxes() {
     // HTMLから範囲を取得する
     const container_star5 = document.getElementById("checkboxContainer_star5");
     const container_star4 = document.getElementById("checkboxContainer_star4");
-    if (!(container_star5) || !(container_star4)) {
-        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4]タグがありません");
+    const container_star3 = document.getElementById("checkboxContainer_star3");
+    if (!(container_star5) || !(container_star4) || !(container_star3)) {
+        throw new Error("[Error] HTMLに[checkboxContainer_star5][checkboxContainer_star4][checkboxContainer_star3]タグがありません");
     }
     var pickupIDs;
     try {
@@ -528,6 +573,11 @@ async function updatePickupCheckboxes() {
     });
     const checkboxes_star4 = container_star4.querySelectorAll("input[type='checkbox']");
     checkboxes_star4.forEach(cb => {
+        const id = Number(cb.dataset.id);
+        cb.checked = pickupIDs.includes(id);
+    });
+    const checkboxes_star3 = container_star3.querySelectorAll("input[type='checkbox']");
+    checkboxes_star3.forEach(cb => {
         const id = Number(cb.dataset.id);
         cb.checked = pickupIDs.includes(id);
     });
