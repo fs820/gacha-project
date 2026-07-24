@@ -484,7 +484,7 @@ function createPickupCharacterEditor(character: Character, pickupIDs: number[], 
     if (character.rarity === "星5") {
         container_star5.appendChild(label);
         container_star5.appendChild(document.createElement("br"));
-    } else if (character.rarity === "星5") {
+    } else if (character.rarity === "星4") {
         container_star4.appendChild(label);
         container_star4.appendChild(document.createElement("br"));
     } else {
