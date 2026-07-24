@@ -127,10 +127,10 @@ async function createPickupCheckboxes(banners: GachaBanner[], characters: Charac
     container_star5.appendChild(label5);
     const label4 = document.createElement("label");
     label4.appendChild<Text>(new Text("星4"));
-    container_star5.appendChild(label4);
+    container_star4.appendChild(label4);
     const label3 = document.createElement("label");
     label3.appendChild<Text>(new Text("星3"));
-    container_star5.appendChild(label3);
+    container_star3.appendChild(label3);
 
     characters.forEach(char => {
         createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
