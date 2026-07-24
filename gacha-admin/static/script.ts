@@ -78,21 +78,24 @@ async function createConstantCheckboxes(characters: Character[]) {
         return;
     }
 
+    const label5 = document.createElement("label");
+    label5.appendChild<Text>(new Text("星5"));
+    container_constant.appendChild(label5);
     characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星5"));
         if (char.rarity === "星5")
             createConstantCharacterEditor(char, nowIDs, container_constant);
     });
+    const label4 = document.createElement("label");
+    label4.appendChild<Text>(new Text("星4"));
+    container_constant.appendChild(label4);
     characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星4"));
         if (char.rarity === "星4")
             createConstantCharacterEditor(char, nowIDs, container_constant);
     });
+    const label3 = document.createElement("label");
+    label3.appendChild<Text>(new Text("星3"));
+    container_constant.appendChild(label3);
     characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星3"));
         if (char.rarity === "星3")
             createConstantCharacterEditor(char, nowIDs, container_constant);
     });
@@ -119,23 +122,18 @@ async function createPickupCheckboxes(banners: GachaBanner[], characters: Charac
         return;
     }
 
+    const label5 = document.createElement("label");
+    label5.appendChild<Text>(new Text("星5"));
+    container_star5.appendChild(label5);
+    const label4 = document.createElement("label");
+    label4.appendChild<Text>(new Text("星4"));
+    container_star5.appendChild(label4);
+    const label3 = document.createElement("label");
+    label3.appendChild<Text>(new Text("星3"));
+    container_star5.appendChild(label3);
+
     characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星5"));
-        if (char.rarity === "星5")
-            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
-    });
-    characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星4"));
-        if (char.rarity === "星4")
-            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
-    });
-    characters.forEach(char => {
-        const label = document.createElement("label");
-        label.appendChild<Text>(new Text("星3"));
-        if (char.rarity === "星3")
-            createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
+        createPickupCharacterEditor(char, pickupIDs, container_star5, container_star4, container_star3);
     });
 }
 
